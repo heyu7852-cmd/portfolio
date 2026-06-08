@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -219,9 +219,16 @@ body {
 .edit-field:hover::after { content:attr(data-placeholder) ' ✏️'; position:absolute; top:50%; right:4px; transform:translateY(-50%); font-size:10px; color:rgba(91,141,239,0.6); pointer-events:none; white-space:nowrap; }
 .edit-field textarea, .edit-field input { display:block; }
 
-
 /* Has custom image indicator */
 .work-card.has-custom-img .thumb-wrap::after { content:'✓ 已传图'; position:absolute; top:8px; right:8px; z-index:4; padding:3px 10px; border-radius:10px; font-size:10px; letter-spacing:1px; background:rgba(91,141,239,0.25); color:var(--accent-blue); border:1px solid rgba(91,141,239,0.35); pointer-events:none; }
+
+/* Sync status indicator */
+.sync-status { display:inline-flex; align-items:center; gap:6px; font-size:11px; letter-spacing:1px; padding:4px 12px; border-radius:20px; border:1px solid var(--glass-border); color:var(--text-muted); }
+.sync-status.syncing { color:#f0a020; border-color:rgba(240,160,32,0.3); }
+.sync-status.synced  { color:#5bef8d; border-color:rgba(91,239,141,0.3); }
+.sync-status.error   { color:#e06c9f; border-color:rgba(224,108,159,0.3); }
+.sync-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.syncing .sync-dot { animation:pulse 0.8s ease infinite; }
 
 /* ========== Anti-Download ========== */
 body { -webkit-user-select:none; -moz-user-select:none; user-select:none; }
@@ -247,13 +254,13 @@ img { pointer-events:none; -webkit-user-drag:none; }
   <div class="gate-box" id="gateBox"></div>
 </div>
 
-<!-- ========== Edit Toolbar (edit=1 模式) ========== -->
+<!-- ========== Edit Mode Toolbar ========== -->
 <div class="edit-toolbar" id="editToolbar">
   <div class="edit-label">管理模式 · 图片上传/管理</div>
   <div class="edit-actions">
-    <button class="edit-btn-sm" id="editExport" title="将所有自定义图片数据备份为JSON">📦 备份数据</button>
-    <button class="edit-btn-sm" id="editImport" title="从备份JSON恢复图片数据">📂 恢复数据</button>
-    <input type="file" id="importFile" accept=".json" style="display:none">
+    <span class="sync-status" id="syncStatus"><span class="sync-dot"></span><span id="syncText">未同步</span></span>
+    <div class="edit-sep"></div>
+    <button class="edit-btn-sm" id="editTokenConfig" title="配置GitHub Token以启用云端同步">☁️ 云端同步设置</button>
     <div class="edit-sep"></div>
     <button class="edit-btn-sm" id="editWatermarkConfig" title="配置水印文字">🖋 水印设置</button>
     <div class="edit-sep"></div>
@@ -264,13 +271,35 @@ img { pointer-events:none; -webkit-user-drag:none; }
   </div>
 </div>
 
+<!-- ========== GitHub Token Modal ========== -->
+<div id="tokenModal" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);">
+  <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:36px 40px;max-width:520px;width:92%;color:var(--text-primary);">
+    <h3 style="font-size:18px;letter-spacing:2px;margin-bottom:6px;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">☁️ 云端同步设置</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;line-height:1.8;">图片和文字将同步到 GitHub，换电脑也能自动加载。<br>Token 仅保存在本机浏览器，绝不上传。</p>
+
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:6px;">GitHub Personal Access Token</label>
+    <input id="tokenInput" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);font-family:monospace;font-size:13px;outline:none;margin-bottom:6px;">
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">需要 <code style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;color:#5bef8d;">repo</code> 权限。在 GitHub → Settings → Developer settings → Personal access tokens 中生成。</p>
+
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:6px;">仓库（owner/repo）</label>
+    <input id="repoInput" type="text" placeholder="heyu7852-cmd/portfolio" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);font-family:var(--font);font-size:13px;outline:none;margin-bottom:20px;">
+
+    <div id="tokenTestResult" style="display:none;font-size:12px;padding:10px 14px;border-radius:8px;margin-bottom:16px;"></div>
+
+    <div style="display:flex;gap:10px;">
+      <button id="tokenTestBtn" style="flex:1;padding:12px;background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-radius:50px;color:var(--text-secondary);font-family:var(--font);font-size:13px;letter-spacing:1px;cursor:pointer;">🔍 测试连接</button>
+      <button id="tokenSaveBtn" style="flex:1;padding:12px;background:var(--gradient-1);border:none;border-radius:50px;color:#fff;font-family:var(--font);font-size:13px;letter-spacing:2px;cursor:pointer;">保存</button>
+      <button id="tokenCloseBtn" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:50px;color:var(--text-secondary);font-family:var(--font);font-size:13px;cursor:pointer;">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== Share Link Modal ========== -->
 <div id="shareModal" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);">
   <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:36px 40px;max-width:460px;width:92%;color:var(--text-primary);">
     <h3 style="font-size:18px;letter-spacing:2px;margin-bottom:6px;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">生成分享链接</h3>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:26px;letter-spacing:0.5px;">设置查看时效和访问密码，链接过期后自动失效</p>
 
-    <!-- 时效选择 -->
     <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:10px;">查看时效</label>
     <div id="shareExpBtns" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">
       <button class="share-exp-btn active" data-exp="24h">24 小时</button>
@@ -280,14 +309,12 @@ img { pointer-events:none; -webkit-user-drag:none; }
       <button class="share-exp-btn" data-exp="30d">30 天</button>
     </div>
 
-    <!-- 密码 -->
     <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:8px;">访问密码（4位数字）</label>
     <div style="display:flex;gap:10px;margin-bottom:22px;align-items:center;">
       <input id="sharePinInput" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="自动生成" style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);font-family:var(--font);font-size:18px;letter-spacing:4px;outline:none;text-align:center;">
       <button id="shareGenPin" style="padding:10px 18px;background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-secondary);font-family:var(--font);font-size:12px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">🎲 随机</button>
     </div>
 
-    <!-- 生成的链接 -->
     <div id="shareLinkWrap" style="display:none;margin-bottom:22px;">
       <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:8px;">分享链接</label>
       <div style="display:flex;gap:8px;align-items:stretch;">
@@ -352,13 +379,8 @@ img { pointer-events:none; -webkit-user-drag:none; }
       <p>博物馆 · 企业馆 · 红色文化馆</p>
       <div class="line"></div>
     </div>
-    <div class="filter-bar" id="filterBar" style="display:none;">
-      <button class="filter-btn active" data-filter="all">全部作品</button>
-      <button class="filter-btn" data-filter="museum">博物馆</button>
-      <button class="filter-btn" data-filter="enterprise">企业馆</button>
-      <button class="filter-btn" data-filter="red">红色文化馆</button>
-    </div>
-    <div class="works-grid" id="worksGrid"></div>
+    <div class="filter-bar" id="filterBar" style="display:none;"></div>
+    <div id="worksGrid"></div>
   </div>
 </section>
 
@@ -391,8 +413,8 @@ img { pointer-events:none; -webkit-user-drag:none; }
 /* ==========================================================
    CONFIG
    ========================================================== */
-const CFG_PIN_CODE       = '3847';  // 4位PIN，留空则不启用
-const CFG_KILL_SWITCH_URL = '';     // 远程熔断URL（可选）
+const CFG_PIN_CODE        = '3847';   // 4位PIN，留空则不启用
+const CFG_KILL_SWITCH_URL = '';       // 远程熔断URL（可选）
 
 /*
   URL参数用法：
@@ -403,20 +425,232 @@ const CFG_KILL_SWITCH_URL = '';     // 远程熔断URL（可选）
 */
 
 /* ==========================================================
-   Watermark Config — 水印配置（存localStorage）
+   GitHub 云端存储配置（Token仅存本地，永不上传）
+   ========================================================== */
+const GH_TOKEN_KEY = 'portfolio_gh_token';
+const GH_REPO_KEY  = 'portfolio_gh_repo';
+const GH_BRANCH    = 'main';
+const GH_DATA_DIR  = 'portfolio-data';   // 仓库内数据目录
+
+function getGhToken() { return localStorage.getItem(GH_TOKEN_KEY) || ''; }
+function getGhRepo()  { return localStorage.getItem(GH_REPO_KEY)  || 'heyu7852-cmd/portfolio'; }
+
+// 统一GitHub API请求
+async function ghRequest(method, path, body) {
+  const token = getGhToken();
+  if (!token) return null;
+  const url = 'https://api.github.com/repos/' + getGhRepo() + path;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type':  'application/json',
+      'Accept':        'application/vnd.github.v3+json'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({message: res.statusText}));
+    throw new Error(err.message || res.statusText);
+  }
+  return res.json();
+}
+
+// 获取文件的SHA（用于更新）
+async function ghGetFileSha(filePath) {
+  try {
+    const data = await ghRequest('GET', '/contents/' + filePath + '?ref=' + GH_BRANCH);
+    return data ? data.sha : null;
+  } catch { return null; }
+}
+
+// 写文件到GitHub（base64内容）
+async function ghWriteFile(filePath, content, commitMsg) {
+  const sha = await ghGetFileSha(filePath);
+  const body = {
+    message: commitMsg || 'Update portfolio data',
+    content: btoa(unescape(encodeURIComponent(content))),
+    branch:  GH_BRANCH
+  };
+  if (sha) body.sha = sha;
+  return ghRequest('PUT', '/contents/' + filePath, body);
+}
+
+// 读文件内容
+async function ghReadFile(filePath) {
+  try {
+    const data = await fetch(
+      'https://raw.githubusercontent.com/' + getGhRepo() + '/' + GH_BRANCH + '/' + filePath,
+      { cache: 'no-store' }
+    );
+    if (!data.ok) return null;
+    return data.text();
+  } catch { return null; }
+}
+
+// 删除文件
+async function ghDeleteFile(filePath) {
+  const sha = await ghGetFileSha(filePath);
+  if (!sha) return;
+  return ghRequest('DELETE', '/contents/' + filePath, {
+    message: 'Remove portfolio image',
+    sha, branch: GH_BRANCH
+  });
+}
+
+/* 同步状态显示 */
+function setSyncStatus(state, text) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.className = 'sync-status ' + state;
+  document.getElementById('syncText').textContent = text;
+}
+
+/* ==========================================================
+   云端数据读写（图片、meta、水印）
+   ========================================================== */
+
+// 从GitHub拉取所有数据并合并到内存缓存
+let ghImagesCache = {};    // { id: base64DataURL }
+let ghMetaCache   = {};    // { id: {title, subtitle, desc} }
+let ghWmCache     = null;  // { text, opacity, density }
+
+async function loadFromGitHub() {
+  if (!getGhToken()) return false;
+  setSyncStatus('syncing', '加载中...');
+  try {
+    // 并行读取 meta.json 和 wm.json
+    const [metaRaw, wmRaw] = await Promise.all([
+      ghReadFile(GH_DATA_DIR + '/meta.json'),
+      ghReadFile(GH_DATA_DIR + '/wm.json')
+    ]);
+    if (metaRaw) {
+      try { ghMetaCache = JSON.parse(metaRaw); } catch {}
+    }
+    if (wmRaw) {
+      try { ghWmCache = JSON.parse(wmRaw); } catch {}
+    }
+
+    // 读取图片索引文件
+    const imgIndexRaw = await ghReadFile(GH_DATA_DIR + '/img_index.json');
+    let imgIndex = {};
+    if (imgIndexRaw) { try { imgIndex = JSON.parse(imgIndexRaw); } catch {} }
+
+    // 并行读取所有图片
+    const ids = Object.keys(imgIndex);
+    if (ids.length > 0) {
+      const imgPromises = ids.map(async id => {
+        try {
+          const res = await fetch(
+            'https://raw.githubusercontent.com/' + getGhRepo() + '/' + GH_BRANCH + '/' + GH_DATA_DIR + '/img_' + id + '.txt',
+            { cache: 'no-store' }
+          );
+          if (res.ok) {
+            const b64 = await res.text();
+            ghImagesCache[id] = b64.trim();
+          }
+        } catch {}
+      });
+      await Promise.all(imgPromises);
+    }
+
+    setSyncStatus('synced', '已同步');
+    return true;
+  } catch (e) {
+    setSyncStatus('error', '加载失败');
+    console.error('GitHub load error:', e);
+    return false;
+  }
+}
+
+// 保存meta到GitHub
+async function saveMetaToGitHub() {
+  if (!getGhToken()) return;
+  try {
+    await ghWriteFile(
+      GH_DATA_DIR + '/meta.json',
+      JSON.stringify(ghMetaCache, null, 2),
+      'Update works metadata'
+    );
+  } catch(e) { console.error('Save meta error:', e); }
+}
+
+// 保存水印配置到GitHub
+async function saveWmToGitHub(cfg) {
+  if (!getGhToken()) return;
+  try {
+    await ghWriteFile(
+      GH_DATA_DIR + '/wm.json',
+      JSON.stringify(cfg, null, 2),
+      'Update watermark config'
+    );
+  } catch(e) { console.error('Save wm error:', e); }
+}
+
+// 保存单张图片到GitHub
+async function saveImageToGitHub(workId, dataURL) {
+  if (!getGhToken()) return;
+  setSyncStatus('syncing', '上传中...');
+  try {
+    // 存图片数据（base64字符串）
+    await ghWriteFile(
+      GH_DATA_DIR + '/img_' + workId + '.txt',
+      dataURL,
+      'Upload image for slot ' + workId
+    );
+    // 更新索引
+    const indexRaw = await ghReadFile(GH_DATA_DIR + '/img_index.json');
+    let index = {};
+    if (indexRaw) { try { index = JSON.parse(indexRaw); } catch {} }
+    index[workId] = true;
+    await ghWriteFile(
+      GH_DATA_DIR + '/img_index.json',
+      JSON.stringify(index),
+      'Update image index'
+    );
+    setSyncStatus('synced', '已同步');
+  } catch(e) {
+    setSyncStatus('error', '上传失败');
+    console.error('Save image error:', e);
+  }
+}
+
+// 删除GitHub上的图片
+async function deleteImageFromGitHub(workId) {
+  if (!getGhToken()) return;
+  setSyncStatus('syncing', '删除中...');
+  try {
+    await ghDeleteFile(GH_DATA_DIR + '/img_' + workId + '.txt');
+    // 更新索引
+    const indexRaw = await ghReadFile(GH_DATA_DIR + '/img_index.json');
+    let index = {};
+    if (indexRaw) { try { index = JSON.parse(indexRaw); } catch {} }
+    delete index[workId];
+    await ghWriteFile(GH_DATA_DIR + '/img_index.json', JSON.stringify(index), 'Remove image from index');
+    setSyncStatus('synced', '已同步');
+  } catch(e) {
+    setSyncStatus('error', '删除失败');
+    console.error('Delete image error:', e);
+  }
+}
+
+/* ==========================================================
+   Watermark Config — 优先用GitHub数据，降级localStorage
    ========================================================== */
 const WM_KEY = 'portfolio_wm_cfg';
 function getWmCfg() {
+  if (ghWmCache) return Object.assign({ text:'何宇', opacity:18, density:'normal' }, ghWmCache);
   try { return Object.assign({ text:'何宇', opacity:18, density:'normal' }, JSON.parse(localStorage.getItem(WM_KEY)||'{}')); }
   catch { return { text:'何宇', opacity:18, density:'normal' }; }
 }
-function saveWmCfg(cfg) { localStorage.setItem(WM_KEY, JSON.stringify(cfg)); }
+function saveWmCfg(cfg) {
+  localStorage.setItem(WM_KEY, JSON.stringify(cfg));
+  ghWmCache = cfg;
+  saveWmToGitHub(cfg);
+}
 
 /**
  * 在Canvas上合成水印
- * @param {HTMLImageElement|HTMLCanvasElement} src
- * @param {HTMLCanvasElement} dstCanvas
- * @param {object} cfg
  */
 function applyWatermark(src, dstCanvas, cfg) {
   const W = src.naturalWidth || src.width;
@@ -426,7 +660,6 @@ function applyWatermark(src, dstCanvas, cfg) {
   const ctx = dstCanvas.getContext('2d');
   ctx.drawImage(src, 0, 0, W, H);
 
-  // 水印参数
   const fontSize  = Math.max(16, Math.round(W * 0.028));
   const spacing   = { tight:120, normal:180, sparse:260 }[cfg.density] || 180;
   const step      = Math.round(spacing * (W / 800));
@@ -439,7 +672,6 @@ function applyWatermark(src, dstCanvas, cfg) {
   ctx.font        = `${fontSize}px -apple-system, PingFang SC, Microsoft YaHei, sans-serif`;
   ctx.textBaseline = 'middle';
 
-  // 倾斜45°平铺
   for (let y = -H; y < H * 2; y += step) {
     for (let x = -W; x < W * 2; x += step) {
       ctx.save();
@@ -453,76 +685,73 @@ function applyWatermark(src, dstCanvas, cfg) {
 }
 
 /* ==========================================================
-   Image Storage — 图片存localStorage
+   Image Storage — 优先GitHub缓存，降级localStorage
    ========================================================== */
 const IMG_KEY = 'portfolio_custom_imgs';
+
 function getCustomImages() {
+  // 优先GitHub缓存
+  if (Object.keys(ghImagesCache).length > 0) return ghImagesCache;
+  // 降级localStorage
   try { return JSON.parse(localStorage.getItem(IMG_KEY)||'{}'); }
   catch { return {}; }
 }
-function saveCustomImages(data) { localStorage.setItem(IMG_KEY, JSON.stringify(data)); }
-function getImgSrc(work) { const c=getCustomImages(); return c[work.id]||''; }
+
+function getImgSrc(work) {
+  const c = getCustomImages();
+  return c[work.id] || c[String(work.id)] || '';
+}
 
 function uploadImage(workId, file, cb) {
   if (!file || !file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
   if (file.size > 8*1024*1024) { alert('图片不能超过8MB，建议先压缩'); return; }
   const r = new FileReader();
   r.onload = e => {
-    const d = getCustomImages();
-    d[workId] = e.target.result;
-    saveCustomImages(d);
-    if (cb) cb(e.target.result);
+    const dataURL = e.target.result;
+    // 存到内存缓存
+    ghImagesCache[workId] = dataURL;
+    // 同步到GitHub（后台进行）
+    saveImageToGitHub(workId, dataURL);
+    // 同时保留localStorage备份
+    try {
+      const d = JSON.parse(localStorage.getItem(IMG_KEY)||'{}');
+      d[workId] = dataURL;
+      localStorage.setItem(IMG_KEY, JSON.stringify(d));
+    } catch {}
+    if (cb) cb(dataURL);
   };
   r.readAsDataURL(file);
 }
 
 function removeImage(workId) {
-  if (!confirm('确定删除这张图片？将恢复为占位图。')) return;
-  const d = getCustomImages(); delete d[workId]; saveCustomImages(d);
+  if (!confirm('确定删除这张图片？')) return;
+  delete ghImagesCache[workId];
+  try {
+    const d = JSON.parse(localStorage.getItem(IMG_KEY)||'{}');
+    delete d[workId];
+    localStorage.setItem(IMG_KEY, JSON.stringify(d));
+  } catch {}
+  deleteImageFromGitHub(workId);
   renderWorks();
 }
 
 function clearAllImages() {
-  if (!confirm('确定清空所有已上传的图片？')) return;
+  if (!confirm('确定清空所有已上传的图片？此操作将同时清除云端数据。')) return;
+  const ids = Object.keys(ghImagesCache);
+  ghImagesCache = {};
   localStorage.removeItem(IMG_KEY);
+  // 异步删除GitHub上的图片
+  ids.forEach(id => deleteImageFromGitHub(id).catch(()=>{}));
   renderWorks();
 }
 
-// 管理模式：下载某个作品的原始图（不带水印）
 function downloadOriginal(workId, title) {
-  const src = getImgSrc({ id: workId, img: works.find(w=>w.id===workId)?.img || '' });
+  const src = getImgSrc({ id: workId });
+  if (!src) { alert('该槽位暂无图片'); return; }
   const a = document.createElement('a');
   a.href = src;
   a.download = title + '.jpg';
   a.click();
-}
-
-function exportData() {
-  const data = { customImages: getCustomImages(), wmCfg: getWmCfg(), exportDate: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '作品集备份_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click(); URL.revokeObjectURL(a.href);
-}
-
-function importData(file) {
-  if (!file) return;
-  const r = new FileReader();
-  r.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.customImages) {
-        const d = getCustomImages();
-        Object.assign(d, data.customImages);
-        saveCustomImages(d);
-      }
-      if (data.wmCfg) saveWmCfg(data.wmCfg);
-      renderWorks();
-      alert('成功导入 ' + Object.keys(data.customImages||{}).length + ' 张图片！');
-    } catch(err) { alert('文件解析失败：' + err.message); }
-  };
-  r.readAsText(file);
 }
 
 /* ==========================================================
@@ -614,12 +843,55 @@ if (isEditMode) {
   const viewLink = document.getElementById('editViewLink');
   viewLink.href = location.href.replace(/[?&]edit=1/,'').replace(/\?$/,'');
 
-  document.getElementById('editExport').addEventListener('click', exportData);
   document.getElementById('editClearAll').addEventListener('click', clearAllImages);
-  document.getElementById('editImport').addEventListener('click', ()=>document.getElementById('importFile').click());
-  document.getElementById('importFile').addEventListener('change', function(){ importData(this.files[0]); this.value=''; });
 
-  // 水印设置弹窗
+  // ---- GitHub Token 配置弹窗 ----
+  const tokenModal = document.getElementById('tokenModal');
+  document.getElementById('editTokenConfig').addEventListener('click', () => {
+    document.getElementById('tokenInput').value = getGhToken();
+    document.getElementById('repoInput').value  = getGhRepo();
+    document.getElementById('tokenTestResult').style.display = 'none';
+    tokenModal.style.display = 'flex';
+  });
+  document.getElementById('tokenSaveBtn').addEventListener('click', () => {
+    const t = document.getElementById('tokenInput').value.trim();
+    const r = document.getElementById('repoInput').value.trim();
+    if (!t) { alert('请输入 Token'); return; }
+    if (!r || !r.includes('/')) { alert('仓库格式应为 owner/repo'); return; }
+    localStorage.setItem(GH_TOKEN_KEY, t);
+    localStorage.setItem(GH_REPO_KEY,  r);
+    tokenModal.style.display = 'none';
+    // 立即从GitHub拉取数据
+    loadFromGitHub().then(() => renderWorks());
+  });
+  document.getElementById('tokenTestBtn').addEventListener('click', async () => {
+    const t = document.getElementById('tokenInput').value.trim();
+    const r = document.getElementById('repoInput').value.trim();
+    if (!t || !r) { alert('请先填写 Token 和仓库'); return; }
+    const btn = document.getElementById('tokenTestBtn');
+    btn.textContent = '测试中...'; btn.disabled = true;
+    const res = document.getElementById('tokenTestResult');
+    try {
+      const resp = await fetch('https://api.github.com/repos/' + r, {
+        headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        res.style.cssText = 'display:block;background:rgba(91,239,141,0.1);border:1px solid rgba(91,239,141,0.3);border-radius:8px;color:#5bef8d;font-size:12px;padding:10px 14px;margin-bottom:16px;';
+        res.textContent = '✓ 连接成功！仓库：' + data.full_name;
+      } else {
+        res.style.cssText = 'display:block;background:rgba(224,108,159,0.1);border:1px solid rgba(224,108,159,0.3);border-radius:8px;color:#e06c9f;font-size:12px;padding:10px 14px;margin-bottom:16px;';
+        res.textContent = '✗ 失败：' + (data.message || resp.statusText);
+      }
+    } catch(e) {
+      res.style.cssText = 'display:block;background:rgba(224,108,159,0.1);border:1px solid rgba(224,108,159,0.3);border-radius:8px;color:#e06c9f;font-size:12px;padding:10px 14px;margin-bottom:16px;';
+      res.textContent = '✗ 网络错误：' + e.message;
+    }
+    btn.textContent = '🔍 测试连接'; btn.disabled = false;
+  });
+  document.getElementById('tokenCloseBtn').addEventListener('click', () => tokenModal.style.display='none');
+
+  // ---- 水印设置弹窗 ----
   const modal = document.getElementById('wmModal');
   document.getElementById('editWatermarkConfig').addEventListener('click', ()=>{
     const cfg = getWmCfg();
@@ -633,7 +905,7 @@ if (isEditMode) {
   document.getElementById('wmSave').addEventListener('click', ()=>{
     saveWmCfg({ text:document.getElementById('wmText').value.trim()||'何宇', opacity:parseInt(document.getElementById('wmOpacity').value), density:document.getElementById('wmDensity').value });
     modal.style.display='none';
-    renderWorks(); // 刷新卡片缩略图水印
+    renderWorks();
   });
   document.getElementById('wmCancel').addEventListener('click', ()=>modal.style.display='none');
 
@@ -641,7 +913,6 @@ if (isEditMode) {
   const shareModal = document.getElementById('shareModal');
   let selectedExp = '24h';
 
-  // 时效按钮切换
   document.querySelectorAll('.share-exp-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.share-exp-btn').forEach(b => b.classList.remove('active'));
@@ -650,83 +921,67 @@ if (isEditMode) {
     });
   });
 
-  // 随机生成4位PIN
-  function genRandomPin() {
-    return String(Math.floor(1000 + Math.random() * 9000));
-  }
+  function genRandomPin() { return String(Math.floor(1000 + Math.random() * 9000)); }
   document.getElementById('shareGenPin').addEventListener('click', () => {
     document.getElementById('sharePinInput').value = genRandomPin();
   });
-
-  // 打开弹窗时自动生成一个PIN
   document.getElementById('editShareLink').addEventListener('click', () => {
     document.getElementById('sharePinInput').value = genRandomPin();
     document.getElementById('shareLinkWrap').style.display = 'none';
     shareModal.style.display = 'flex';
   });
-
-  // 生成链接
   document.getElementById('shareGenBtn').addEventListener('click', () => {
     const pin = document.getElementById('sharePinInput').value.trim();
-    if (!/^\d{4}$/.test(pin)) {
-      alert('请输入4位数字密码');
-      return;
-    }
+    if (!/^\d{4}$/.test(pin)) { alert('请输入4位数字密码'); return; }
     const base = location.origin + location.pathname;
     const link = base + '?pin=' + pin + '&exp=' + selectedExp;
-
-    // 计算过期时间描述
     const expMap = { '24h':'24小时', '48h':'48小时', '3d':'3天', '7d':'7天', '30d':'30天' };
-    const expDesc = expMap[selectedExp] || selectedExp;
-
     document.getElementById('shareLinkOut').value = link;
-    document.getElementById('shareLinkNote').textContent =
-      '密码：' + pin + '　|　有效期：' + expDesc + '　|　过期后链接自动失效';
+    document.getElementById('shareLinkNote').textContent = '密码：' + pin + '　|　有效期：' + (expMap[selectedExp]||selectedExp) + '　|　过期后链接自动失效';
     document.getElementById('shareLinkWrap').style.display = 'block';
   });
-
-  // 复制链接
   document.getElementById('shareCopyBtn').addEventListener('click', () => {
     const val = document.getElementById('shareLinkOut').value;
     navigator.clipboard.writeText(val).then(() => {
       const btn = document.getElementById('shareCopyBtn');
       btn.textContent = '✓ 已复制';
       setTimeout(() => btn.textContent = '复制', 2000);
-    }).catch(() => {
-      document.getElementById('shareLinkOut').select();
-      document.execCommand('copy');
-    });
+    }).catch(() => { document.getElementById('shareLinkOut').select(); document.execCommand('copy'); });
   });
-
-  document.getElementById('shareCloseBtn').addEventListener('click', () => {
-    shareModal.style.display = 'none';
-  });
+  document.getElementById('shareCloseBtn').addEventListener('click', () => shareModal.style.display='none');
 }
 
 /* ==========================================================
-   Works Data — 8个固定槽位，内容从localStorage读取
+   Works Data — 8个固定槽位
    ========================================================== */
 const WORKS_META_KEY = 'portfolio_works_meta';
+
 function getWorksMeta() {
+  // 优先GitHub缓存
+  if (Object.keys(ghMetaCache).length > 0) return ghMetaCache;
   try { return JSON.parse(localStorage.getItem(WORKS_META_KEY)||'{}'); }
   catch { return {}; }
 }
-function saveWorksMeta(data) { localStorage.setItem(WORKS_META_KEY, JSON.stringify(data)); }
+function saveWorksMeta(data) {
+  ghMetaCache = data;
+  localStorage.setItem(WORKS_META_KEY, JSON.stringify(data));
+  // 异步同步到GitHub
+  if (getGhToken()) {
+    saveMetaToGitHub().catch(()=>{});
+  }
+}
 
-// 8个固定槽位基础结构（不含内容，内容从localStorage读）
 const works = Array.from({length:8}, (_,i) => ({ id: i+1 }));
 
-// 获取某个槽位的显示内容（优先localStorage，否则显示占位）
 function getWorkMeta(id) {
   const meta = getWorksMeta();
   return Object.assign({ title:'作品 '+id, subtitle:'点击编辑副标题', desc:'点击编辑项目描述...' }, meta[id]||{});
 }
 
 /* ==========================================================
-   Watermarked Thumbnail — 在卡片缩略图上渲染水印Canvas
+   Watermarked Thumbnail
    ========================================================== */
 function renderThumbWithWatermark(container, srcUrl) {
-  // 清理旧的canvas/img
   container.innerHTML = '';
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
@@ -736,10 +991,9 @@ function renderThumbWithWatermark(container, srcUrl) {
   img.crossOrigin = 'anonymous';
   img.onload = ()=> applyWatermark(img, canvas, getWmCfg());
   img.onerror = ()=> {
-    // 图片加载失败（picsum跨域）则降级显示普通img
     container.innerHTML = '';
     const fallback = document.createElement('img');
-    fallback.src = srcUrl; fallback.alt=''; fallback.className='thumb';
+    fallback.src = srcUrl; fallback.alt='';
     fallback.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
     container.appendChild(fallback);
   };
@@ -756,13 +1010,12 @@ let currentWorks  = works;
 
 function renderWorks() {
   const customImages = getCustomImages();
-  // 非编辑模式下只显示已上传图片的槽位
-  currentWorks = isEditMode ? works : works.filter(w => !!customImages[w.id]);
+  currentWorks = isEditMode ? works : works.filter(w => !!(customImages[w.id] || customImages[String(w.id)]));
   grid.innerHTML = '';
 
   currentWorks.forEach((w, i) => {
     const meta = getWorkMeta(w.id);
-    const hasCustom = !!customImages[w.id];
+    const hasCustom = !!(customImages[w.id] || customImages[String(w.id)]);
     const card = document.createElement('div');
     card.className = 'work-card' + (hasCustom ? ' has-custom-img' : '');
     card.style.transitionDelay = `${(i%6)*0.06}s`;
@@ -779,7 +1032,6 @@ function renderWorks() {
         <input type="file" id="up_${w.id}" accept="image/*" style="display:none" data-wid="${w.id}">
       </div>` : '';
 
-    // 编辑模式：标题/副标题/描述显示编辑提示
     const editHint = isEditMode ? ' edit-field' : '';
     const titlePlaceholder  = isEditMode ? ' data-placeholder="点击编辑项目名称"' : '';
     const subPlaceholder    = isEditMode ? ' data-placeholder="点击编辑副标题"' : '';
@@ -803,7 +1055,6 @@ function renderWorks() {
     });
     grid.appendChild(card);
 
-    // 渲染缩略图（有图才渲染，无图显示占位）
     const tw = document.getElementById('tw_' + w.id);
     if (hasCustom) {
       renderThumbWithWatermark(tw, getImgSrc(w));
@@ -812,19 +1063,15 @@ function renderWorks() {
         rebindUploadEvents(tw, w);
       }
     } else if (isEditMode) {
-      // 编辑模式显示上传占位
       tw.innerHTML = uploadHTML;
       rebindUploadEvents(tw, w);
-    } else {
-      // 非编辑且无图：不显示（已被过滤）
     }
 
-    // 编辑模式：绑定文字内联编辑
     if (isEditMode) {
       card.querySelectorAll('.edit-field').forEach(el => {
         el.addEventListener('click', e => {
           e.stopPropagation();
-          if (el.querySelector('textarea,input')) return; // 已在编辑中
+          if (el.querySelector('textarea,input')) return;
           const ftype = el.dataset.ftype;
           const fid   = parseInt(el.dataset.fid);
           const meta  = getWorkMeta(fid);
@@ -838,7 +1085,7 @@ function renderWorks() {
             el.appendChild(ta);
             ta.focus();
             ta.addEventListener('blur', () => saveField(fid, ftype, ta.value.trim()));
-            ta.addEventListener('keydown', e => { if (e.key==='Escape') { ta.blur(); } });
+            ta.addEventListener('keydown', e => { if (e.key==='Escape') ta.blur(); });
           } else {
             const inp = document.createElement('input');
             inp.type = 'text';
@@ -855,7 +1102,6 @@ function renderWorks() {
     }
   });
 
-  // 无作品时显示空态
   if (!isEditMode && currentWorks.length === 0) {
     grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:80px 0;letter-spacing:1px;grid-column:1/-1;">暂无作品展示</p>';
   }
@@ -883,10 +1129,24 @@ function saveField(id, ftype, val) {
   if (!meta[id]) meta[id] = {};
   meta[id][ftype] = val;
   saveWorksMeta(meta);
-  renderWorks(); // 刷新卡片
+  renderWorks();
 }
 
-renderWorks();
+/* ==========================================================
+   初始化：从GitHub加载数据后渲染
+   ========================================================== */
+(async function init() {
+  // 先用本地缓存快速渲染
+  renderWorks();
+  // 有Token则从GitHub拉取，拉完再重新渲染
+  if (getGhToken()) {
+    const ok = await loadFromGitHub();
+    if (ok) renderWorks();
+  } else if (isEditMode) {
+    // 编辑模式没有Token，提示设置
+    setSyncStatus('error', '未设置 Token');
+  }
+})();
 
 let observer;
 function observeCards() {
@@ -898,7 +1158,7 @@ function observeCards() {
 observeCards();
 
 /* ==========================================================
-   Lightbox — Canvas渲染带水印大图
+   Lightbox
    ========================================================== */
 const lb       = document.getElementById('lightbox');
 const lbCanvas = document.getElementById('lbCanvas');
@@ -912,7 +1172,6 @@ function renderLbImage(src) {
   img.crossOrigin = 'anonymous';
   img.onload = ()=> {
     applyWatermark(img, lbCanvas, getWmCfg());
-    // 适配容器大小
     const maxW = Math.min(window.innerWidth * 0.9, 1100);
     const maxH = window.innerHeight * 0.65;
     const ratio = Math.min(maxW/img.naturalWidth, maxH/img.naturalHeight, 1);
@@ -920,12 +1179,11 @@ function renderLbImage(src) {
     lbCanvas.style.height = Math.round(img.naturalHeight * ratio) + 'px';
   };
   img.onerror = ()=> {
-    // 降级：直接用img显示
     lbCanvas.style.display = 'none';
     const wrap = document.getElementById('lbCanvasWrap');
     let fb = wrap.querySelector('img.lb-fallback');
     if (!fb) { fb=document.createElement('img'); fb.className='lb-fallback'; fb.style.cssText='max-width:100%;max-height:65vh;border-radius:12px;display:block;'; wrap.appendChild(fb); }
-    fb.src = src; lbCanvas.style.display='none'; fb.style.display='block';
+    fb.src = src; fb.style.display='block';
   };
   img.src = src;
 }
@@ -979,20 +1237,13 @@ document.addEventListener('mousemove', e=>{
 /* ==========================================================
    Anti-Download Protection
    ========================================================== */
-// 右键禁用
 document.addEventListener('contextmenu', e=>e.preventDefault());
-
-// 键盘快捷键拦截
 document.addEventListener('keydown', e=>{
   if (e.key==='F12') { e.preventDefault(); return; }
   if (e.ctrlKey && e.shiftKey && ('IJC'.includes(e.key))) { e.preventDefault(); return; }
   if ((e.ctrlKey||e.metaKey) && 'spua'.includes(e.key.toLowerCase())) { e.preventDefault(); return; }
 });
-
-// 图片拖拽禁用
 document.addEventListener('dragstart', e=>{ if(e.target.tagName==='IMG'||e.target.tagName==='CANVAS') e.preventDefault(); });
-
-// 移动端长按
 document.addEventListener('touchstart', ()=>{}, { passive:true });
 </script>
 </body>
