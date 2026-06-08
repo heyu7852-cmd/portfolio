@@ -205,6 +205,11 @@ body {
 .card-action-btn.dl:hover { border-color:#5bef8d; background:rgba(91,239,141,0.08); }
 .card-action-btn.del:hover { border-color:#e06c9f; color:#e06c9f; }
 
+/* Share Exp Buttons */
+.share-exp-btn { padding:7px 16px; border:1px solid var(--glass-border); border-radius:20px; background:rgba(255,255,255,0.05); color:var(--text-secondary); font-family:var(--font); font-size:12px; letter-spacing:1px; cursor:pointer; transition:all 0.2s; }
+.share-exp-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
+.share-exp-btn.active { border-color:var(--accent-blue); background:rgba(91,141,239,0.15); color:var(--accent-blue); }
+
 /* Has custom image indicator */
 .work-card.has-custom-img .thumb-wrap::after { content:'✓ 已传图'; position:absolute; top:8px; right:8px; z-index:4; padding:3px 10px; border-radius:10px; font-size:10px; letter-spacing:1px; background:rgba(91,141,239,0.25); color:var(--accent-blue); border:1px solid rgba(91,141,239,0.35); pointer-events:none; }
 
@@ -242,8 +247,50 @@ img { pointer-events:none; -webkit-user-drag:none; }
     <div class="edit-sep"></div>
     <button class="edit-btn-sm" id="editWatermarkConfig" title="配置水印文字">🖋 水印设置</button>
     <div class="edit-sep"></div>
+    <button class="edit-btn-sm" id="editShareLink" title="生成分享链接">🔗 生成分享链接</button>
+    <div class="edit-sep"></div>
     <button class="edit-btn-sm danger" id="editClearAll" title="清空所有已上传图片">🗑 清空图片</button>
     <a href="" id="editViewLink" class="edit-btn-sm primary" style="text-decoration:none;">👁 预览模式</a>
+  </div>
+</div>
+
+<!-- ========== Share Link Modal ========== -->
+<div id="shareModal" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);">
+  <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:36px 40px;max-width:460px;width:92%;color:var(--text-primary);">
+    <h3 style="font-size:18px;letter-spacing:2px;margin-bottom:6px;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">生成分享链接</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:26px;letter-spacing:0.5px;">设置查看时效和访问密码，链接过期后自动失效</p>
+
+    <!-- 时效选择 -->
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:10px;">查看时效</label>
+    <div id="shareExpBtns" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">
+      <button class="share-exp-btn active" data-exp="24h">24 小时</button>
+      <button class="share-exp-btn" data-exp="48h">48 小时</button>
+      <button class="share-exp-btn" data-exp="3d">3 天</button>
+      <button class="share-exp-btn" data-exp="7d">7 天</button>
+      <button class="share-exp-btn" data-exp="30d">30 天</button>
+    </div>
+
+    <!-- 密码 -->
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:8px;">访问密码（4位数字）</label>
+    <div style="display:flex;gap:10px;margin-bottom:22px;align-items:center;">
+      <input id="sharePinInput" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="自动生成" style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);font-family:var(--font);font-size:18px;letter-spacing:4px;outline:none;text-align:center;">
+      <button id="shareGenPin" style="padding:10px 18px;background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-secondary);font-family:var(--font);font-size:12px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">🎲 随机</button>
+    </div>
+
+    <!-- 生成的链接 -->
+    <div id="shareLinkWrap" style="display:none;margin-bottom:22px;">
+      <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:8px;">分享链接</label>
+      <div style="display:flex;gap:8px;align-items:stretch;">
+        <input id="shareLinkOut" type="text" readonly style="flex:1;padding:10px 14px;background:rgba(91,141,239,0.08);border:1px solid rgba(91,141,239,0.3);border-radius:8px;color:var(--accent-blue);font-family:var(--font);font-size:12px;outline:none;word-break:break-all;">
+        <button id="shareCopyBtn" style="padding:10px 16px;background:var(--gradient-1);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">复制</button>
+      </div>
+      <p id="shareLinkNote" style="font-size:11px;color:var(--text-muted);margin-top:8px;letter-spacing:0.5px;"></p>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button id="shareGenBtn" style="flex:1;padding:12px;background:var(--gradient-1);border:none;border-radius:50px;color:#fff;font-family:var(--font);font-size:13px;letter-spacing:2px;cursor:pointer;">生成链接</button>
+      <button id="shareCloseBtn" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:50px;color:var(--text-secondary);font-family:var(--font);font-size:13px;letter-spacing:1px;cursor:pointer;">关闭</button>
+    </div>
   </div>
 </div>
 
@@ -579,6 +626,71 @@ if (isEditMode) {
     renderWorks(currentFilter); // 刷新卡片缩略图水印
   });
   document.getElementById('wmCancel').addEventListener('click', ()=>modal.style.display='none');
+
+  // ---- 生成分享链接 ----
+  const shareModal = document.getElementById('shareModal');
+  let selectedExp = '24h';
+
+  // 时效按钮切换
+  document.querySelectorAll('.share-exp-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.share-exp-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedExp = btn.dataset.exp;
+    });
+  });
+
+  // 随机生成4位PIN
+  function genRandomPin() {
+    return String(Math.floor(1000 + Math.random() * 9000));
+  }
+  document.getElementById('shareGenPin').addEventListener('click', () => {
+    document.getElementById('sharePinInput').value = genRandomPin();
+  });
+
+  // 打开弹窗时自动生成一个PIN
+  document.getElementById('editShareLink').addEventListener('click', () => {
+    document.getElementById('sharePinInput').value = genRandomPin();
+    document.getElementById('shareLinkWrap').style.display = 'none';
+    shareModal.style.display = 'flex';
+  });
+
+  // 生成链接
+  document.getElementById('shareGenBtn').addEventListener('click', () => {
+    const pin = document.getElementById('sharePinInput').value.trim();
+    if (!/^\d{4}$/.test(pin)) {
+      alert('请输入4位数字密码');
+      return;
+    }
+    const base = location.origin + location.pathname;
+    const link = base + '?pin=' + pin + '&exp=' + selectedExp;
+
+    // 计算过期时间描述
+    const expMap = { '24h':'24小时', '48h':'48小时', '3d':'3天', '7d':'7天', '30d':'30天' };
+    const expDesc = expMap[selectedExp] || selectedExp;
+
+    document.getElementById('shareLinkOut').value = link;
+    document.getElementById('shareLinkNote').textContent =
+      '密码：' + pin + '　|　有效期：' + expDesc + '　|　过期后链接自动失效';
+    document.getElementById('shareLinkWrap').style.display = 'block';
+  });
+
+  // 复制链接
+  document.getElementById('shareCopyBtn').addEventListener('click', () => {
+    const val = document.getElementById('shareLinkOut').value;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = document.getElementById('shareCopyBtn');
+      btn.textContent = '✓ 已复制';
+      setTimeout(() => btn.textContent = '复制', 2000);
+    }).catch(() => {
+      document.getElementById('shareLinkOut').select();
+      document.execCommand('copy');
+    });
+  });
+
+  document.getElementById('shareCloseBtn').addEventListener('click', () => {
+    shareModal.style.display = 'none';
+  });
 }
 
 /* ==========================================================
