@@ -1,0 +1,830 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>何宇 | 博物馆空间设计作品集</title>
+<style>
+/* ========== CSS Variables & Reset ========== */
+:root {
+  --bg-primary: #0c0c0c;
+  --bg-secondary: #121212;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-border-hover: rgba(255,255,255,0.18);
+  --text-primary: #f0f0f0;
+  --text-secondary: rgba(255,255,255,0.55);
+  --text-muted: rgba(255,255,255,0.35);
+  --accent-blue: #5b8def;
+  --accent-purple: #8b6ce0;
+  --accent-glow: rgba(91,141,239,0.15);
+  --gradient-1: linear-gradient(135deg, #5b8def, #8b6ce0, #e06c9f);
+  --gradient-2: linear-gradient(90deg, transparent, rgba(91,141,239,0.3), transparent);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --font: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+  --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height:1.7;
+  overflow-x:hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== Access Gate Overlay ========== */
+.gate-overlay {
+  position: fixed; inset:0; z-index:99999;
+  display: flex; align-items:center; justify-content:center;
+  background: var(--bg-primary);
+  backdrop-filter: blur(40px);
+}
+.gate-overlay.hidden { display:none; }
+.gate-box {
+  text-align:center; padding:60px 48px;
+  border:1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(20px);
+  max-width:420px; width:90%;
+}
+.gate-box h2 {
+  font-size:24px; font-weight:500; letter-spacing:3px;
+  background: var(--gradient-1);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text; margin-bottom:8px;
+}
+.gate-box .gate-sub { font-size:13px; color:var(--text-muted); letter-spacing:2px; margin-bottom:32px; }
+.gate-box .gate-input {
+  width:100%; padding:14px 20px;
+  border:1px solid var(--glass-border); border-radius:50px;
+  background:rgba(255,255,255,0.04); color:var(--text-primary);
+  font-family:var(--font); font-size:18px; letter-spacing:8px; text-align:center;
+  outline:none; transition:var(--transition);
+}
+.gate-box .gate-input:focus { border-color:var(--accent-blue); }
+.gate-box .gate-input::placeholder { letter-spacing:2px; font-size:13px; color:var(--text-muted); }
+.gate-box .gate-btn {
+  margin-top:20px; width:100%; padding:14px;
+  border:none; border-radius:50px;
+  background:var(--gradient-1); color:#fff;
+  font-family:var(--font); font-size:14px; letter-spacing:3px;
+  cursor:pointer; transition:var(--transition);
+}
+.gate-box .gate-btn:hover { opacity:0.85; transform:translateY(-2px); }
+.gate-box .gate-err { margin-top:14px; font-size:12px; color:#e06c9f; letter-spacing:1px; min-height:18px; }
+.gate-box .gate-expired { font-size:14px; color:var(--text-muted); letter-spacing:1px; line-height:1.8; }
+
+/* ========== Flowing Gradient Background ========== */
+.flow-bg { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.flow-bg .orb {
+  position:absolute; border-radius:50%; filter:blur(100px);
+  opacity:0.3; animation:floatOrb 20s ease-in-out infinite;
+}
+.flow-bg .orb:nth-child(1) { width:600px; height:600px; background:radial-gradient(circle, rgba(91,141,239,0.25), transparent); top:-10%; left:-10%; animation-delay:0s; }
+.flow-bg .orb:nth-child(2) { width:500px; height:500px; background:radial-gradient(circle, rgba(139,108,224,0.2), transparent); bottom:-5%; right:-5%; animation-delay:-7s; }
+.flow-bg .orb:nth-child(3) { width:400px; height:400px; background:radial-gradient(circle, rgba(224,108,159,0.15), transparent); top:50%; left:50%; animation-delay:-14s; }
+@keyframes floatOrb {
+  0%,100% { transform:translate(0,0) scale(1); }
+  25% { transform:translate(80px,-60px) scale(1.1); }
+  50% { transform:translate(-40px,80px) scale(0.95); }
+  75% { transform:translate(60px,40px) scale(1.05); }
+}
+
+.flow-line { position:fixed; top:0; left:0; width:100%; height:1px; z-index:1; background:var(--gradient-2); background-size:200% 100%; animation:flowLine 4s linear infinite; }
+@keyframes flowLine { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
+
+.container { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:0 24px; }
+
+/* ========== Hero ========== */
+.hero {
+  min-height:100vh; display:flex; flex-direction:column;
+  justify-content:center; align-items:center; text-align:center;
+  padding:80px 24px; position:relative;
+}
+.hero::after { content:''; position:absolute; bottom:0; left:10%; width:80%; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+.hero-title { font-size:clamp(36px,6vw,72px); font-weight:700; background:var(--gradient-1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:4px; margin-bottom:16px; animation:fadeUp 1s ease forwards; }
+.hero-sub { font-size:clamp(16px,2vw,22px); font-weight:300; color:var(--text-secondary); letter-spacing:6px; margin-bottom:12px; animation:fadeUp 1s ease 0.2s forwards; opacity:0; }
+.hero-desc { font-size:14px; color:var(--text-muted); max-width:500px; letter-spacing:2px; animation:fadeUp 1s ease 0.4s forwards; opacity:0; }
+.scroll-hint { position:absolute; bottom:40px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-muted); font-size:12px; letter-spacing:2px; animation:fadeUp 1s ease 1s forwards, bounce 2s ease 1.5s infinite; opacity:0; }
+.scroll-hint .arrow { width:1px; height:30px; background:linear-gradient(to bottom,rgba(255,255,255,0.3),transparent); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+@keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(8px);} }
+
+/* ========== Section ========== */
+.section { padding:80px 0; }
+.section-header { text-align:center; margin-bottom:60px; }
+.section-header h2 { font-size:clamp(24px,3vw,36px); font-weight:500; letter-spacing:4px; margin-bottom:12px; }
+.section-header p { color:var(--text-secondary); font-size:14px; letter-spacing:2px; }
+.section-header .line { width:40px; height:1px; background:var(--gradient-1); margin:16px auto 0; }
+
+/* ========== Filter ========== */
+.filter-bar { display:flex; justify-content:center; gap:12px; margin-bottom:48px; flex-wrap:wrap; }
+.filter-btn { padding:10px 28px; border:1px solid var(--glass-border); border-radius:50px; background:rgba(255,255,255,0.03); color:var(--text-secondary); font-family:var(--font); font-size:13px; letter-spacing:2px; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); }
+.filter-btn:hover { border-color:var(--glass-border-hover); color:var(--text-primary); background:rgba(255,255,255,0.06); }
+.filter-btn.active { border-color:var(--accent-blue); color:var(--accent-blue); background:rgba(91,141,239,0.08); box-shadow:0 0 20px rgba(91,141,239,0.08); }
+
+/* ========== Works Grid ========== */
+.works-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:24px; }
+.work-card { position:relative; border-radius:var(--radius-lg); background:var(--bg-card); border:1px solid var(--glass-border); overflow:hidden; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); opacity:0; transform:translateY(40px); }
+.work-card.visible { opacity:1; transform:translateY(0); }
+.work-card:hover { transform:translateY(-6px); border-color:var(--glass-border-hover); background:var(--bg-card-hover); box-shadow:0 20px 60px rgba(0,0,0,0.3),0 0 30px rgba(91,141,239,0.05); }
+.work-card .thumb-wrap { width:100%; aspect-ratio:4/3; overflow:hidden; position:relative; }
+.work-card .thumb-wrap canvas,
+.work-card .thumb-wrap img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.6s ease; }
+.work-card:hover .thumb-wrap canvas,
+.work-card:hover .thumb-wrap img { transform:scale(1.05); }
+.work-card .info { padding:20px 24px 24px; }
+.work-card .info .tag { display:inline-block; padding:2px 12px; border-radius:20px; font-size:11px; letter-spacing:1px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.03); color:var(--text-muted); }
+.work-card .info .tag.museum { border-color:rgba(91,141,239,0.2); color:#5b8def; }
+.work-card .info .tag.enterprise { border-color:rgba(139,108,224,0.2); color:#8b6ce0; }
+.work-card .info .tag.red { border-color:rgba(224,108,159,0.2); color:#e06c9f; }
+.work-card .info h3 { font-size:17px; font-weight:500; margin-bottom:4px; }
+.work-card .info .sub { font-size:13px; color:var(--text-secondary); margin-bottom:8px; }
+.work-card .info .brief { font-size:12px; color:var(--text-muted); line-height:1.6; }
+.work-card .glow-hover { position:absolute; inset:0; border-radius:var(--radius-lg); opacity:0; transition:opacity 0.6s ease; pointer-events:none; background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(91,141,239,0.08), transparent 60%); }
+.work-card:hover .glow-hover { opacity:1; }
+
+/* ========== Lightbox ========== */
+.lightbox { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.95); backdrop-filter:blur(30px); opacity:0; pointer-events:none; transition:opacity 0.4s ease; }
+.lightbox.open { opacity:1; pointer-events:auto; }
+.lightbox .lb-content { display:flex; flex-direction:column; align-items:center; max-width:90vw; max-height:90vh; position:relative; }
+.lightbox .lb-canvas-wrap { position:relative; max-width:100%; max-height:65vh; }
+.lightbox .lb-canvas-wrap canvas { max-width:100%; max-height:65vh; border-radius:var(--radius-md); object-fit:contain; box-shadow:0 30px 80px rgba(0,0,0,0.5); display:block; }
+.lightbox .lb-info { text-align:center; margin-top:24px; max-width:600px; }
+.lightbox .lb-info h3 { font-size:20px; font-weight:500; margin-bottom:4px; }
+.lightbox .lb-info .sub { color:var(--accent-blue); font-size:13px; letter-spacing:2px; margin-bottom:8px; }
+.lightbox .lb-info .desc { font-size:13px; color:var(--text-secondary); line-height:1.7; }
+.lightbox .lb-close { position:absolute; top:-48px; right:0; background:none; border:none; color:var(--text-secondary); font-size:32px; cursor:pointer; transition:color 0.3s; font-family:var(--font); }
+.lightbox .lb-close:hover { color:var(--text-primary); }
+.lightbox .lb-nav { position:absolute; top:50%; transform:translateY(-50%); width:calc(100% + 120px); left:-60px; display:flex; justify-content:space-between; pointer-events:none; }
+.lightbox .lb-nav button { pointer-events:auto; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:var(--text-primary); width:48px; height:48px; border-radius:50%; font-size:18px; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; }
+.lightbox .lb-nav button:hover { background:rgba(255,255,255,0.1); border-color:var(--glass-border-hover); }
+
+/* ========== Footer ========== */
+.footer { border-top:1px solid rgba(255,255,255,0.04); padding:48px 24px; text-align:center; color:var(--text-muted); font-size:13px; letter-spacing:1px; }
+
+/* ========== Edit Mode Toolbar ========== */
+.edit-toolbar {
+  position:fixed; top:0; left:0; right:0; z-index:99998;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 24px;
+  background:rgba(14,14,14,0.97); backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(91,141,239,0.2);
+  transform:translateY(-100%); transition:transform 0.4s ease;
+}
+.edit-toolbar.show { transform:translateY(0); }
+.edit-toolbar .edit-label { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--accent-blue); letter-spacing:2px; }
+.edit-toolbar .edit-label::before { content:''; width:8px; height:8px; border-radius:50%; background:var(--accent-blue); animation:pulse 1.5s ease infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.edit-toolbar .edit-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.edit-btn-sm { padding:7px 16px; border:1px solid var(--glass-border); border-radius:20px; background:rgba(255,255,255,0.04); color:var(--text-secondary); font-family:var(--font); font-size:11px; letter-spacing:1px; cursor:pointer; transition:var(--transition); }
+.edit-btn-sm:hover { border-color:var(--accent-blue); color:var(--accent-blue); background:rgba(91,141,239,0.08); }
+.edit-btn-sm.danger:hover { border-color:#e06c9f; color:#e06c9f; background:rgba(224,108,159,0.08); }
+.edit-btn-sm.primary { background:var(--gradient-1); color:#fff; border:none; }
+.edit-sep { width:1px; height:20px; background:var(--glass-border); margin:0 4px; }
+
+/* ========== Card Upload Overlay ========== */
+.card-upload-overlay { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); border-radius:var(--radius-lg); opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
+.edit-mode .card-upload-overlay { opacity:1; pointer-events:auto; }
+.card-upload-overlay .upload-icon { width:52px; height:52px; margin-bottom:12px; border:2px dashed rgba(255,255,255,0.25); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--text-muted); transition:all 0.3s; }
+.card-upload-overlay:hover .upload-icon { border-color:var(--accent-blue); color:var(--accent-blue); transform:scale(1.1); }
+.card-upload-overlay .upload-text { font-size:12px; color:var(--text-secondary); letter-spacing:1px; margin-bottom:6px; }
+.card-upload-overlay .upload-hint { font-size:10px; color:var(--text-muted); margin-bottom:12px; }
+.card-upload-overlay .card-actions { display:flex; gap:6px; }
+.card-action-btn { padding:5px 14px; border:1px solid var(--glass-border); border-radius:16px; background:rgba(255,255,255,0.06); color:var(--text-secondary); font-family:var(--font); font-size:10px; letter-spacing:1px; cursor:pointer; transition:all 0.2s; }
+.card-action-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
+.card-action-btn.dl { border-color:rgba(91,239,141,0.3); color:#5bef8d; }
+.card-action-btn.dl:hover { border-color:#5bef8d; background:rgba(91,239,141,0.08); }
+.card-action-btn.del:hover { border-color:#e06c9f; color:#e06c9f; }
+
+/* Has custom image indicator */
+.work-card.has-custom-img .thumb-wrap::after { content:'✓ 已传图'; position:absolute; top:8px; right:8px; z-index:4; padding:3px 10px; border-radius:10px; font-size:10px; letter-spacing:1px; background:rgba(91,141,239,0.25); color:var(--accent-blue); border:1px solid rgba(91,141,239,0.35); pointer-events:none; }
+
+/* ========== Anti-Download ========== */
+body { -webkit-user-select:none; -moz-user-select:none; user-select:none; }
+body.unlocked { -webkit-user-select:text; -moz-user-select:text; user-select:text; }
+img { pointer-events:none; -webkit-user-drag:none; }
+
+/* ========== Responsive ========== */
+@media (max-width:768px) {
+  .works-grid { grid-template-columns:1fr; }
+  .lightbox .lb-nav { width:100%; left:0; }
+  .lightbox .lb-nav button { width:36px; height:36px; font-size:14px; }
+  .lightbox .lb-canvas-wrap canvas { max-height:50vh; }
+  .gate-box { padding:40px 28px; }
+  .edit-toolbar { flex-direction:column; gap:8px; padding:10px 16px; }
+  .edit-toolbar .edit-actions { justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== Access Gate ========== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box" id="gateBox"></div>
+</div>
+
+<!-- ========== Edit Toolbar (edit=1 模式) ========== -->
+<div class="edit-toolbar" id="editToolbar">
+  <div class="edit-label">管理模式 · 图片上传/管理</div>
+  <div class="edit-actions">
+    <button class="edit-btn-sm" id="editExport" title="将所有自定义图片数据备份为JSON">📦 备份数据</button>
+    <button class="edit-btn-sm" id="editImport" title="从备份JSON恢复图片数据">📂 恢复数据</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+    <div class="edit-sep"></div>
+    <button class="edit-btn-sm" id="editWatermarkConfig" title="配置水印文字">🖋 水印设置</button>
+    <div class="edit-sep"></div>
+    <button class="edit-btn-sm danger" id="editClearAll" title="清空所有已上传图片">🗑 清空图片</button>
+    <a href="" id="editViewLink" class="edit-btn-sm primary" style="text-decoration:none;">👁 预览模式</a>
+  </div>
+</div>
+
+<!-- ========== Watermark Config Modal ========== -->
+<div id="wmModal" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);">
+  <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:36px 40px;max-width:400px;width:90%;color:var(--text-primary);">
+    <h3 style="font-size:18px;letter-spacing:2px;margin-bottom:24px;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">水印设置</h3>
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:6px;">水印文字</label>
+    <input id="wmText" type="text" value="何宇" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);font-family:var(--font);font-size:14px;outline:none;margin-bottom:16px;">
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:6px;">不透明度（当前：<span id="wmOpacityVal">18</span>%）</label>
+    <input id="wmOpacity" type="range" min="5" max="50" value="18" style="width:100%;margin-bottom:20px;">
+    <label style="font-size:12px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:6px;">水印间距</label>
+    <select id="wmDensity" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--text-primary);font-family:var(--font);font-size:13px;outline:none;margin-bottom:24px;">
+      <option value="tight">密集</option>
+      <option value="normal" selected>标准</option>
+      <option value="sparse">稀疏</option>
+    </select>
+    <div style="display:flex;gap:10px;">
+      <button id="wmSave" style="flex:1;padding:12px;background:var(--gradient-1);border:none;border-radius:50px;color:#fff;font-family:var(--font);font-size:13px;letter-spacing:2px;cursor:pointer;">保存</button>
+      <button id="wmCancel" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:50px;color:var(--text-secondary);font-family:var(--font);font-size:13px;letter-spacing:1px;cursor:pointer;">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Background ========== -->
+<div class="flow-bg">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+</div>
+<div class="flow-line"></div>
+
+<!-- ========== Hero ========== -->
+<section class="hero">
+  <h1 class="hero-title">何宇</h1>
+  <p class="hero-sub">博物馆空间设计师</p>
+  <p class="hero-desc">专注展馆设计 · 企业馆 · 文创空间</p>
+  <div class="scroll-hint">
+    <span>向下探索</span>
+    <div class="arrow"></div>
+  </div>
+</section>
+
+<!-- ========== Works ========== -->
+<section class="section" id="works">
+  <div class="container">
+    <div class="section-header">
+      <h2>设计作品</h2>
+      <p>博物馆 · 企业馆 · 红色文化馆</p>
+      <div class="line"></div>
+    </div>
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-filter="all">全部作品</button>
+      <button class="filter-btn" data-filter="museum">博物馆</button>
+      <button class="filter-btn" data-filter="enterprise">企业馆</button>
+      <button class="filter-btn" data-filter="red">红色文化馆</button>
+    </div>
+    <div class="works-grid" id="worksGrid"></div>
+  </div>
+</section>
+
+<!-- ========== Footer ========== -->
+<footer class="footer">
+  <p>何宇 · 博物馆空间设计</p>
+  <p style="margin-top:8px;font-size:12px;opacity:0.5;">&copy; 2026 All Rights Reserved</p>
+</footer>
+
+<!-- ========== Lightbox ========== -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-content">
+    <button class="lb-close" id="lbClose">&times;</button>
+    <div class="lb-nav">
+      <button id="lbPrev">&#8249;</button>
+      <button id="lbNext">&#8250;</button>
+    </div>
+    <div class="lb-canvas-wrap" id="lbCanvasWrap">
+      <canvas id="lbCanvas"></canvas>
+    </div>
+    <div class="lb-info">
+      <h3 id="lbTitle"></h3>
+      <p class="sub" id="lbSub"></p>
+      <p class="desc" id="lbDesc"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================
+   CONFIG
+   ========================================================== */
+const CFG_PIN_CODE       = '3847';  // 4位PIN，留空则不启用
+const CFG_KILL_SWITCH_URL = '';     // 远程熔断URL（可选）
+
+/*
+  URL参数用法：
+    ?exp=1h / 2h / 6h / 12h / 24h / 2d / 3d
+    ?exp=2026-07-01 18:00
+    ?pin=1234&exp=2d
+    ?edit=1  → 管理模式（自动解锁，可上传/下载/删除图片）
+*/
+
+/* ==========================================================
+   Watermark Config — 水印配置（存localStorage）
+   ========================================================== */
+const WM_KEY = 'portfolio_wm_cfg';
+function getWmCfg() {
+  try { return Object.assign({ text:'何宇', opacity:18, density:'normal' }, JSON.parse(localStorage.getItem(WM_KEY)||'{}')); }
+  catch { return { text:'何宇', opacity:18, density:'normal' }; }
+}
+function saveWmCfg(cfg) { localStorage.setItem(WM_KEY, JSON.stringify(cfg)); }
+
+/**
+ * 在Canvas上合成水印
+ * @param {HTMLImageElement|HTMLCanvasElement} src
+ * @param {HTMLCanvasElement} dstCanvas
+ * @param {object} cfg
+ */
+function applyWatermark(src, dstCanvas, cfg) {
+  const W = src.naturalWidth || src.width;
+  const H = src.naturalHeight || src.height;
+  dstCanvas.width  = W;
+  dstCanvas.height = H;
+  const ctx = dstCanvas.getContext('2d');
+  ctx.drawImage(src, 0, 0, W, H);
+
+  // 水印参数
+  const fontSize  = Math.max(16, Math.round(W * 0.028));
+  const spacing   = { tight:120, normal:180, sparse:260 }[cfg.density] || 180;
+  const step      = Math.round(spacing * (W / 800));
+  const opacity   = (cfg.opacity || 18) / 100;
+  const text      = cfg.text || '何宇';
+
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.fillStyle   = '#ffffff';
+  ctx.font        = `${fontSize}px -apple-system, PingFang SC, Microsoft YaHei, sans-serif`;
+  ctx.textBaseline = 'middle';
+
+  // 倾斜45°平铺
+  for (let y = -H; y < H * 2; y += step) {
+    for (let x = -W; x < W * 2; x += step) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-Math.PI / 6);
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/* ==========================================================
+   Image Storage — 图片存localStorage
+   ========================================================== */
+const IMG_KEY = 'portfolio_custom_imgs';
+function getCustomImages() {
+  try { return JSON.parse(localStorage.getItem(IMG_KEY)||'{}'); }
+  catch { return {}; }
+}
+function saveCustomImages(data) { localStorage.setItem(IMG_KEY, JSON.stringify(data)); }
+function getImgSrc(work) { const c=getCustomImages(); return c[work.id]||work.img; }
+
+function uploadImage(workId, file, cb) {
+  if (!file || !file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
+  if (file.size > 8*1024*1024) { alert('图片不能超过8MB，建议先压缩'); return; }
+  const r = new FileReader();
+  r.onload = e => {
+    const d = getCustomImages();
+    d[workId] = e.target.result;
+    saveCustomImages(d);
+    if (cb) cb(e.target.result);
+  };
+  r.readAsDataURL(file);
+}
+
+function removeImage(workId) {
+  if (!confirm('确定删除这张图片？将恢复为占位图。')) return;
+  const d = getCustomImages(); delete d[workId]; saveCustomImages(d);
+  renderWorks(currentFilter);
+}
+
+function clearAllImages() {
+  if (!confirm('确定清空所有已上传的图片？')) return;
+  localStorage.removeItem(IMG_KEY);
+  renderWorks(currentFilter);
+}
+
+// 管理模式：下载某个作品的原始图（不带水印）
+function downloadOriginal(workId, title) {
+  const src = getImgSrc({ id: workId, img: works.find(w=>w.id===workId)?.img || '' });
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = title + '.jpg';
+  a.click();
+}
+
+function exportData() {
+  const data = { customImages: getCustomImages(), wmCfg: getWmCfg(), exportDate: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '作品集备份_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function importData(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.customImages) {
+        const d = getCustomImages();
+        Object.assign(d, data.customImages);
+        saveCustomImages(d);
+      }
+      if (data.wmCfg) saveWmCfg(data.wmCfg);
+      renderWorks(currentFilter);
+      alert('成功导入 ' + Object.keys(data.customImages||{}).length + ' 张图片！');
+    } catch(err) { alert('文件解析失败：' + err.message); }
+  };
+  r.readAsText(file);
+}
+
+/* ==========================================================
+   Access Gate
+   ========================================================== */
+(function initGate() {
+  const overlay = document.getElementById('gateOverlay');
+  const box     = document.getElementById('gateBox');
+  function getParam(k) { return new URLSearchParams(location.search).get(k); }
+
+  const urlExp    = getParam('exp');
+  const urlPin    = getParam('pin');
+  const activePin = urlPin || CFG_PIN_CODE;
+
+  let expiryTime = null, expiryLabel = '';
+  if (urlExp) {
+    const now = new Date();
+    if (/^\d{4}-\d{2}-\d{2}/.test(urlExp)) {
+      expiryTime  = new Date(urlExp.replace(' ','T'));
+      expiryLabel = '至 ' + urlExp;
+    } else {
+      const m = urlExp.match(/^(\d+)(h|d)$/);
+      if (m) {
+        const v = parseInt(m[1]);
+        if (m[2]==='h') { now.setHours(now.getHours()+v); expiryLabel=v+'小时'; }
+        else            { now.setDate(now.getDate()+v); expiryLabel=v+'天'; }
+        expiryTime = now;
+      }
+    }
+  }
+
+  if (CFG_KILL_SWITCH_URL) {
+    const s=document.createElement('script'); s.src=CFG_KILL_SWITCH_URL;
+    s.onload=s.onerror=checkAccess; document.head.appendChild(s);
+  } else { checkAccess(); }
+
+  function checkAccess() {
+    if (window.KILL_SWITCH===true) { showBlocked(); return; }
+    if (expiryTime && new Date()>expiryTime) { showExpired(); return; }
+    if (activePin && activePin.length>0) {
+      const k='portfolio_un_'+(urlPin||CFG_PIN_CODE);
+      if (sessionStorage.getItem(k)==='1') { unlock(); return; }
+      showPinInput(expiryLabel);
+    } else { unlock(); }
+  }
+
+  function showBlocked() { box.innerHTML=`<h2 style="-webkit-text-fill-color:#e06c9f;background:none;color:#e06c9f;">访问已关闭</h2><p class="gate-expired" style="margin-top:16px;">本作品集已被作者关闭访问权限</p>`; }
+  function showExpired() { box.innerHTML=`<h2 style="-webkit-text-fill-color:var(--text-muted);background:none;">访问已过期</h2><p class="gate-expired" style="margin-top:16px;">本作品集的有效期已过<br>请联系作者获取最新链接</p>`; }
+
+  function showPinInput(expHint) {
+    const hint = expHint ? `<p style="font-size:12px;color:rgba(255,255,255,0.25);margin-bottom:20px;letter-spacing:1px;">有效期：${expHint}</p>` : '';
+    box.innerHTML = `
+      <h2>何宇</h2>
+      <p class="gate-sub">作品集访问验证</p>
+      ${hint}
+      <input class="gate-input" id="pinInput" type="password" maxlength="4" placeholder="请输入4位访问码" autofocus>
+      <button class="gate-btn" id="pinBtn">进入作品集</button>
+      <div class="gate-err" id="pinErr"></div>`;
+    const inp=document.getElementById('pinInput'), btn=document.getElementById('pinBtn'), err=document.getElementById('pinErr');
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') btn.click(); });
+    btn.addEventListener('click', ()=>{
+      if (inp.value===activePin) {
+        sessionStorage.setItem('portfolio_un_'+(urlPin||CFG_PIN_CODE),'1');
+        unlock();
+      } else { err.textContent='访问码错误，请重试'; inp.value=''; inp.focus(); }
+    });
+  }
+})();
+
+function unlock() {
+  const ov = document.getElementById('gateOverlay');
+  if (ov) ov.classList.add('hidden');
+  document.body.classList.add('unlocked');
+  document.body.style.overflow = '';
+}
+
+/* ==========================================================
+   Edit Mode Init
+   ========================================================== */
+const isEditMode = (new URLSearchParams(location.search).get('edit')==='1');
+if (isEditMode) {
+  document.body.classList.add('edit-mode');
+  unlock();
+  document.body.style.paddingTop = '56px';
+  const toolbar = document.getElementById('editToolbar');
+  setTimeout(()=>toolbar.classList.add('show'), 300);
+
+  // 预览模式链接
+  const viewLink = document.getElementById('editViewLink');
+  viewLink.href = location.href.replace(/[?&]edit=1/,'').replace(/\?$/,'');
+
+  document.getElementById('editExport').addEventListener('click', exportData);
+  document.getElementById('editClearAll').addEventListener('click', clearAllImages);
+  document.getElementById('editImport').addEventListener('click', ()=>document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', function(){ importData(this.files[0]); this.value=''; });
+
+  // 水印设置弹窗
+  const modal = document.getElementById('wmModal');
+  document.getElementById('editWatermarkConfig').addEventListener('click', ()=>{
+    const cfg = getWmCfg();
+    document.getElementById('wmText').value    = cfg.text;
+    document.getElementById('wmOpacity').value = cfg.opacity;
+    document.getElementById('wmOpacityVal').textContent = cfg.opacity;
+    document.getElementById('wmDensity').value = cfg.density;
+    modal.style.display = 'flex';
+  });
+  document.getElementById('wmOpacity').addEventListener('input', function(){ document.getElementById('wmOpacityVal').textContent=this.value; });
+  document.getElementById('wmSave').addEventListener('click', ()=>{
+    saveWmCfg({ text:document.getElementById('wmText').value.trim()||'何宇', opacity:parseInt(document.getElementById('wmOpacity').value), density:document.getElementById('wmDensity').value });
+    modal.style.display='none';
+    renderWorks(currentFilter); // 刷新卡片缩略图水印
+  });
+  document.getElementById('wmCancel').addEventListener('click', ()=>modal.style.display='none');
+}
+
+/* ==========================================================
+   Works Data
+   ========================================================== */
+const works = [
+  // --- 博物馆 ---
+  { id:1, cat:'museum', title:'理县革命老区博物馆', subtitle:'红色+民族双主题融合', desc:'272.4㎡序厅设计。深沉中国红主调，融合暖棕金铜色金属饰面与藏羌传统回纹浮雕。穹顶暖金色圆形光晕聚焦，两侧立柱融入羌族碉楼石砌肌理。深色哑光大理石地面，庄重沉浸氛围。', img:'https://picsum.photos/seed/museum01/800/600' },
+  { id:2, cat:'museum', title:'上虞博物馆', subtitle:'线性时间型叙事空间', desc:'历史叙事类博物馆空间设计。沿时间轴展开的历史长河动线，展墙嵌入图文板与多媒体屏交错排列。暗环境重点照明，突出文物展品。暖棕大地色调，木质展示框架营造温润质感。', img:'https://picsum.photos/seed/museum02/800/600' },
+  { id:3, cat:'museum', title:'龙华烈士纪念馆', subtitle:'向心汇聚型红色主题', desc:'红色主题纪念馆空间设计。中央大型纪念装置，环形参观动线，高挑空穹顶。主色调为深沉革命红+金色，洗墙灯突出墙面浮雕叙事内容。庄严肃穆氛围，沉浸式光影设计。', img:'https://picsum.photos/seed/museum03/800/600' },
+  { id:4, cat:'museum', title:'贵州民族博物馆', subtitle:'有机曲线型民族主题', desc:'民族文化博物馆空间设计。弧形曲面墙面模拟山水形态，展墙融入苗绣、蜡染等民族纹样镂空透光处理。暖色灯光营造温馨氛围，地面深色石材。民族手工艺展示与数字互动结合。', img:'https://picsum.photos/seed/museum04/800/600' },
+  { id:5, cat:'museum', title:'城市历史文化展馆', subtitle:'时空穿越沉浸体验', desc:'城市博物馆设计。入口时光隧道动线，两侧镜面玻璃+LED灯带营造穿越感。主展区阵列式灯箱矩阵展示城市老照片，对比现代影像。灰色工业风+暖色局部点缀。', img:'https://picsum.photos/seed/museum05/800/600' },
+  { id:6, cat:'museum', title:'非遗博物馆', subtitle:'传统工艺数字活化', desc:'非物质文化遗产展示馆空间设计。暗色调背景衬托展品，展墙采用传统建筑元素（花窗、斗拱）的现代转译。设置手工艺互动体验区，灯光聚焦工艺细节。原木色+深灰色搭配。', img:'https://picsum.photos/seed/museum06/800/600' },
+  { id:7, cat:'museum', title:'自然生态科普馆', subtitle:'沉浸式生态体验空间', desc:'自然科学博物馆设计。中央大型生态造景装置，弧形LED环幕展示四季变化。蓝色+绿色渐变光效营造自然氛围，地面模拟不同生态材质。互动科普展项融合多媒体触控。', img:'https://picsum.photos/seed/museum07/800/600' },
+  // --- 企业馆 ---
+  { id:8, cat:'enterprise', title:'易普力30周年企业文化展厅', subtitle:'光与火的诗篇', desc:'513㎡央企30周年展厅。能建红#E60012+工程蓝+工业灰色彩体系。入口大型浮雕墙讲述企业30年历程，核心区弧幕播放品牌影片，尾厅设置智能互动沙盘。专业级工业展厅。', img:'https://picsum.photos/seed/enterprise01/800/600' },
+  { id:9, cat:'enterprise', title:'中梁山智慧大修基地展厅', subtitle:'智绘轨道·质领未来', desc:'轨道交通工业展厅。6大展区：序厅→数字沙盘→核心主展区（38%）→数字孪生（36%）→党建区→尾厅。立体数字沙盘+飞屏联动、智慧魔方互动×5、1:80实体沙盘。科技蓝+工业灰。', img:'https://picsum.photos/seed/enterprise02/800/600' },
+  { id:10, cat:'enterprise', title:'科技企业创新展厅', subtitle:'未来科技·沉浸体验', desc:'高新科技企业展厅设计。通透玻璃幕墙入口，白色+蓝色科技色调，大面积LED互动屏。中央悬浮装置艺术品，地面镜面反射营造无限延伸感。机器人互动区+产品实物展示。', img:'https://picsum.photos/seed/enterprise03/800/600' },
+  { id:11, cat:'enterprise', title:'集团品牌馆', subtitle:'品牌叙事·文化传承', desc:'大型企业集团品牌馆空间设计。入口品牌时光走廊，两侧墙面曲面展示集团里程碑。中心区全息投影企业沙盘，环形展示墙配合灯光序列。深灰+香槟金高级配色，商业质感。', img:'https://picsum.photos/seed/enterprise04/800/600' },
+  { id:12, cat:'enterprise', title:'产业创新体验中心', subtitle:'科技+产业融合空间', desc:'产业园区展示中心设计。开敞式大空间，顶部裸露工业风保留原建筑肌理。大型多媒体互动展项，灵活布局可满足展览+会议+发布多重功能。工业灰+蓝绿色点缀。', img:'https://picsum.photos/seed/enterprise05/800/600' },
+  { id:13, cat:'enterprise', title:'工业园区展示厅', subtitle:'园区规划·产业布局', desc:'工业园区规划展示馆。中央超大型物理沙盘+顶部LED天幕联动，立体展示园区全貌。墙面透明屏叠加展示产业数据。未来科技风格设计语言，蓝灰色调为主，暗环境沉浸式体验。', img:'https://picsum.photos/seed/enterprise06/800/600' },
+  { id:14, cat:'enterprise', title:'金融企业历史陈列馆', subtitle:'金融文化·品牌沉淀', desc:'金融机构企业馆设计。稳重深色基调+金色点缀，木质展示框架营造品质感。用金融数据可视化作为展陈元素，灯箱阵列展示历年业绩。庄重专业氛围，私密洽谈区嵌入展区。', img:'https://picsum.photos/seed/enterprise07/800/600' },
+  // --- 红色文化馆 ---
+  { id:15, cat:'red', title:'党建教育展厅', subtitle:'红色引擎·创新引领', desc:'国企党建展厅一体化设计。中国红+暖金色主调，党建文化展板规整排列。顶部暖色灯光营造庄重氛围。设入党宣誓区和先锋党员展示区。数字化互动屏展示党建成果数据。', img:'https://picsum.photos/seed/red01/800/600' },
+  { id:16, cat:'red', title:'革命历史纪念馆', subtitle:'红色记忆·薪火相传', desc:'革命历史类展馆空间设计。暗红色主调，大型浮雕墙开篇叙事，实物展品+图文板结合。灯光聚焦展品，墙面嵌入多媒体屏播放历史影像。庄严肃穆，沉浸式光影氛围。', img:'https://picsum.photos/seed/red02/800/600' },
+  { id:17, cat:'red', title:'廉政教育基地', subtitle:'清正廉洁·警钟长鸣', desc:'廉政教育主题展馆。白色+深灰主调，干净利落的极简风格。大型LED屏幕展示警示案例，互动区设置廉洁承诺签名终端。设计语言克制、理性，营造反思与警醒空间氛围。', img:'https://picsum.photos/seed/red03/800/600' },
+  { id:18, cat:'red', title:'党史陈列馆', subtitle:'百年征程·初心不改', desc:'党史主题陈列馆空间设计。以时间轴为主线，分区展示党的奋斗历程。红色渐变墙面+暖色灯带，展柜内文物重点照明。设置沉浸式影像厅，环形屏幕播放党史纪录片。', img:'https://picsum.photos/seed/red04/800/600' },
+  { id:19, cat:'red', title:'红色文创体验馆', subtitle:'红色文化·创意赋能', desc:'红色文化创意体验空间。打破传统红色展馆厚重感，融合现代文创展示手法。红色元素+新媒体艺术结合，设置文创产品展示区和DIY体验区。年轻化设计语言，适合青少年教育。', img:'https://picsum.photos/seed/red05/800/600' },
+  { id:20, cat:'red', title:'烈士纪念馆', subtitle:'英雄不朽·浩气长存', desc:'革命烈士纪念馆空间设计。高挑空序厅，中央烈士雕塑+顶部天光效果。两侧墙面镌刻烈士名录，灯光从墙面透出营造圣洁感。主展区实物+图文+多媒体综合展陈。深红+暖金色调。', img:'https://picsum.photos/seed/red06/800/600' },
+  { id:21, cat:'red', title:'巾帼革命展馆', subtitle:'妇女运动史·巾帼力量', desc:'妇女运动史主题展馆。分区递进型叙事结构，从近代到当代女革命者事迹。展厅色彩柔和，暖色调为主。展墙融入女性元素曲线造型，实物展品+多媒体人物访谈结合展示。', img:'https://picsum.photos/seed/red07/800/600' },
+];
+
+/* ==========================================================
+   Watermarked Thumbnail — 在卡片缩略图上渲染水印Canvas
+   ========================================================== */
+function renderThumbWithWatermark(container, srcUrl) {
+  // 清理旧的canvas/img
+  container.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+  container.appendChild(canvas);
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=> applyWatermark(img, canvas, getWmCfg());
+  img.onerror = ()=> {
+    // 图片加载失败（picsum跨域）则降级显示普通img
+    container.innerHTML = '';
+    const fallback = document.createElement('img');
+    fallback.src = srcUrl; fallback.alt=''; fallback.className='thumb';
+    fallback.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    container.appendChild(fallback);
+  };
+  img.src = srcUrl;
+}
+
+/* ==========================================================
+   Render Works
+   ========================================================== */
+const grid       = document.getElementById('worksGrid');
+const filterBtns = document.querySelectorAll('.filter-btn');
+let currentFilter = 'all';
+let currentWorks  = works;
+const catLabel    = { museum:'博物馆', enterprise:'企业馆', red:'红色文化馆' };
+const catTagClass = { museum:'museum', enterprise:'enterprise', red:'red' };
+
+function renderWorks(filter) {
+  currentWorks = filter==='all' ? works : works.filter(w=>w.cat===filter);
+  grid.innerHTML = '';
+  const customImages = getCustomImages();
+  currentWorks.forEach((w,i) => {
+    const card = document.createElement('div');
+    const hasCustom = !!customImages[w.id];
+    card.className = 'work-card' + (hasCustom ? ' has-custom-img' : '');
+    card.style.transitionDelay = `${(i%6)*0.06}s`;
+
+    const uploadHTML = isEditMode ? `
+      <div class="card-upload-overlay">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">${hasCustom?'点击替换图片':'点击上传效果图'}</div>
+        <div class="upload-hint">JPG / PNG / WebP · 最大8MB</div>
+        <div class="card-actions">
+          <label class="card-action-btn" for="up_${w.id}">上传/替换</label>
+          ${hasCustom?`<button class="card-action-btn dl" data-dl="${w.id}">⬇ 下载</button><button class="card-action-btn del" data-del="${w.id}">删除</button>`:''}
+        </div>
+        <input type="file" id="up_${w.id}" accept="image/*" style="display:none" data-wid="${w.id}">
+      </div>` : '';
+
+    card.innerHTML = `
+      <div class="glow-hover"></div>
+      <div class="thumb-wrap" id="tw_${w.id}">${uploadHTML}</div>
+      <div class="info">
+        <span class="tag ${catTagClass[w.cat]}">${catLabel[w.cat]}</span>
+        <h3>${w.title}</h3>
+        <p class="sub">${w.subtitle}</p>
+        <p class="brief">${w.desc.slice(0,60)}...</p>
+      </div>`;
+
+    card.dataset.index = i;
+    card.addEventListener('click', e=>{
+      if (isEditMode && e.target.closest('.card-upload-overlay')) return;
+      openLightbox(i);
+    });
+    grid.appendChild(card);
+
+    // 渲染带水印的缩略图
+    const tw = document.getElementById('tw_' + w.id);
+    renderThumbWithWatermark(tw, getImgSrc(w));
+    // 恢复upload overlay（renderThumbWithWatermark会清空container）
+    if (isEditMode) {
+      tw.insertAdjacentHTML('beforeend', uploadHTML.replace(/\bcard-upload-overlay\b/,'card-upload-overlay'));
+      // 重新绑定上传事件
+      const fileInput = tw.querySelector(`#up_${w.id}`);
+      if (fileInput) {
+        fileInput.addEventListener('change', function(){
+          uploadImage(parseInt(this.dataset.wid), this.files[0], ()=>renderWorks(currentFilter));
+        });
+      }
+      const delBtn = tw.querySelector('[data-del]');
+      if (delBtn) delBtn.addEventListener('click', e=>{ e.stopPropagation(); removeImage(parseInt(delBtn.dataset.del)); });
+      const dlBtn = tw.querySelector('[data-dl]');
+      if (dlBtn) dlBtn.addEventListener('click', e=>{ e.stopPropagation(); downloadOriginal(parseInt(dlBtn.dataset.dl), w.title); });
+      const uploadLabel = tw.querySelector('label[for="up_'+w.id+'"]');
+      if (uploadLabel) uploadLabel.addEventListener('click', e=>{
+        e.stopPropagation();
+        tw.querySelector('#up_'+w.id)?.click();
+      });
+    }
+  });
+  setTimeout(()=>{ if(observer) observer.disconnect(); observeCards(); }, 50);
+}
+renderWorks('all');
+
+filterBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    filterBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderWorks(currentFilter);
+  });
+});
+
+let observer;
+function observeCards() {
+  observer = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); }});
+  }, { threshold:0.1, rootMargin:'0px 0px -40px 0px' });
+  document.querySelectorAll('.work-card').forEach(c=>observer.observe(c));
+}
+observeCards();
+
+/* ==========================================================
+   Lightbox — Canvas渲染带水印大图
+   ========================================================== */
+const lb       = document.getElementById('lightbox');
+const lbCanvas = document.getElementById('lbCanvas');
+const lbTitle  = document.getElementById('lbTitle');
+const lbSub    = document.getElementById('lbSub');
+const lbDesc   = document.getElementById('lbDesc');
+let lbIndex = 0;
+
+function renderLbImage(src) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=> {
+    applyWatermark(img, lbCanvas, getWmCfg());
+    // 适配容器大小
+    const maxW = Math.min(window.innerWidth * 0.9, 1100);
+    const maxH = window.innerHeight * 0.65;
+    const ratio = Math.min(maxW/img.naturalWidth, maxH/img.naturalHeight, 1);
+    lbCanvas.style.width  = Math.round(img.naturalWidth  * ratio) + 'px';
+    lbCanvas.style.height = Math.round(img.naturalHeight * ratio) + 'px';
+  };
+  img.onerror = ()=> {
+    // 降级：直接用img显示
+    lbCanvas.style.display = 'none';
+    const wrap = document.getElementById('lbCanvasWrap');
+    let fb = wrap.querySelector('img.lb-fallback');
+    if (!fb) { fb=document.createElement('img'); fb.className='lb-fallback'; fb.style.cssText='max-width:100%;max-height:65vh;border-radius:12px;display:block;'; wrap.appendChild(fb); }
+    fb.src = src; lbCanvas.style.display='none'; fb.style.display='block';
+  };
+  img.src = src;
+}
+
+function openLightbox(i) {
+  lbIndex = i;
+  const w = currentWorks[i];
+  renderLbImage(getImgSrc(w));
+  lbTitle.textContent = w.title;
+  lbSub.textContent   = `${catLabel[w.cat]} · ${w.subtitle}`;
+  lbDesc.textContent  = w.desc;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() { lb.classList.remove('open'); document.body.style.overflow = ''; }
+function navLightbox(dir) {
+  lbIndex = (lbIndex+dir+currentWorks.length) % currentWorks.length;
+  const w = currentWorks[lbIndex];
+  renderLbImage(getImgSrc(w));
+  lbTitle.textContent = w.title;
+  lbSub.textContent   = `${catLabel[w.cat]} · ${w.subtitle}`;
+  lbDesc.textContent  = w.desc;
+}
+
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+document.getElementById('lbPrev').addEventListener('click', ()=>navLightbox(-1));
+document.getElementById('lbNext').addEventListener('click', ()=>navLightbox(1));
+lb.addEventListener('click', e=>{ if(e.target===lb) closeLightbox(); });
+document.addEventListener('keydown', e=>{
+  if (!lb.classList.contains('open')) return;
+  if (e.key==='Escape') closeLightbox();
+  if (e.key==='ArrowLeft') navLightbox(-1);
+  if (e.key==='ArrowRight') navLightbox(1);
+});
+
+/* ==========================================================
+   Mouse Glow on Cards
+   ========================================================== */
+document.addEventListener('mousemove', e=>{
+  document.querySelectorAll('.work-card').forEach(card=>{
+    const r = card.getBoundingClientRect();
+    if (e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom) {
+      card.style.setProperty('--mx', ((e.clientX-r.left)/r.width*100)+'%');
+      card.style.setProperty('--my', ((e.clientY-r.top)/r.height*100)+'%');
+    }
+  });
+});
+
+/* ==========================================================
+   Anti-Download Protection
+   ========================================================== */
+// 右键禁用
+document.addEventListener('contextmenu', e=>e.preventDefault());
+
+// 键盘快捷键拦截
+document.addEventListener('keydown', e=>{
+  if (e.key==='F12') { e.preventDefault(); return; }
+  if (e.ctrlKey && e.shiftKey && ('IJC'.includes(e.key))) { e.preventDefault(); return; }
+  if ((e.ctrlKey||e.metaKey) && 'spua'.includes(e.key.toLowerCase())) { e.preventDefault(); return; }
+});
+
+// 图片拖拽禁用
+document.addEventListener('dragstart', e=>{ if(e.target.tagName==='IMG'||e.target.tagName==='CANVAS') e.preventDefault(); });
+
+// 移动端长按
+document.addEventListener('touchstart', ()=>{}, { passive:true });
+</script>
+</body>
+</html>
