@@ -125,17 +125,35 @@ body {
 .section-header p { color:var(--text-secondary); font-size:14px; letter-spacing:2px; }
 .section-header .line { width:40px; height:1px; background:var(--gradient-1); margin:16px auto 0; }
 
-/* ========== Filter ========== */
-.filter-bar { display:flex; justify-content:center; gap:12px; margin-bottom:48px; flex-wrap:wrap; }
-.filter-btn { padding:10px 28px; border:1px solid var(--glass-border); border-radius:50px; background:rgba(255,255,255,0.03); color:var(--text-secondary); font-family:var(--font); font-size:13px; letter-spacing:2px; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); }
-.filter-btn:hover { border-color:var(--glass-border-hover); color:var(--text-primary); background:rgba(255,255,255,0.06); }
-.filter-btn.active { border-color:var(--accent-blue); color:var(--accent-blue); background:rgba(91,141,239,0.08); box-shadow:0 0 20px rgba(91,141,239,0.08); }
+/* ========== Filter / Category Tabs ========== */
+.cat-tabs { display:flex; justify-content:center; gap:8px; margin-bottom:40px; flex-wrap:wrap; padding:0 16px; }
+.cat-tab { padding:10px 26px; border:1px solid var(--glass-border); border-radius:50px; background:rgba(255,255,255,0.03); color:var(--text-secondary); font-family:var(--font); font-size:13px; letter-spacing:2px; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); white-space:nowrap; position:relative; }
+.cat-tab:hover { border-color:var(--glass-border-hover); color:var(--text-primary); background:rgba(255,255,255,0.06); }
+.cat-tab.active { border-color:var(--accent-blue); color:#fff; background:linear-gradient(135deg, rgba(91,141,239,0.25), rgba(139,108,224,0.2)); box-shadow:0 0 24px rgba(91,141,239,0.12); }
+.cat-tab .cat-count { display:inline-block; min-width:18px; text-align:center; font-size:11px; background:rgba(255,255,255,0.08); border-radius:10px; padding:0 6px; margin-left:6px; line-height:18px; }
+.cat-tab.active .cat-count { background:rgba(255,255,255,0.15); }
 
-/* ========== Works Grid ========== */
-.works-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:24px; }
-.work-card { position:relative; border-radius:var(--radius-lg); background:var(--bg-card); border:1px solid var(--glass-border); overflow:hidden; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); opacity:0; transform:translateY(40px); }
+/* ========== Works by Category ========== */
+.works-by-category {}
+.cat-section { margin-bottom:48px; }
+.cat-section-header { display:flex; align-items:center; gap:14px; margin-bottom:20px; padding:0 4px; }
+.cat-section-header .cat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.cat-section-header .cat-dot.museum    { background:linear-gradient(135deg,#5b8def,#4fc3f7); box-shadow:0 0 12px rgba(91,141,239,0.4); }
+.cat-section-header .cat-dot.enterprise{ background:linear-gradient(135deg,#8b6ce0,#b388ff); box-shadow:0 0 12px rgba(139,108,224,0.4); }
+.cat-section-header .cat-dot.red       { background:linear-gradient(135deg,#e06c9f,#ff8a80); box-shadow:0 0 12px rgba(224,108,159,0.4); }
+.cat-section-header .cat-dot.personal  { background:linear-gradient(135deg,#26a69a,#80cbc4); box-shadow:0 0 12px rgba(38,166,154,0.4); }
+.cat-section-header h3 { font-size:15px; font-weight:500; letter-spacing:2px; color:var(--text-primary); }
+.cat-section-header .cat-count-label { font-size:12px; color:var(--text-muted); margin-left:auto; }
+
+/* Horizontal scroll container */
+.cat-row { display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding-bottom:16px; -webkit-overflow-scrolling:touch; }
+.cat-row::-webkit-scrollbar { height:5px; }
+.cat-row::-webkit-scrollbar-track { background:transparent; }
+.cat-row::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:10px; }
+
+.work-card { position:relative; flex-shrink:0; width:320px; border-radius:var(--radius-lg); background:var(--bg-card); border:1px solid var(--glass-border); overflow:hidden; cursor:pointer; transition:var(--transition); backdrop-filter:blur(10px); opacity:0; transform:translateY(30px); scroll-snap-align:start; }
 .work-card.visible { opacity:1; transform:translateY(0); }
-.work-card:hover { transform:translateY(-6px); border-color:var(--glass-border-hover); background:var(--bg-card-hover); box-shadow:0 20px 60px rgba(0,0,0,0.3),0 0 30px rgba(91,141,239,0.05); }
+.work-card:hover { transform:translateY(-8px); border-color:var(--glass-border-hover); background:var(--bg-card-hover); box-shadow:0 24px 60px rgba(0,0,0,0.35),0 0 30px rgba(91,141,239,0.06); }
 .work-card .thumb-wrap { width:100%; aspect-ratio:4/3; overflow:hidden; position:relative; }
 .work-card .thumb-wrap canvas,
 .work-card .thumb-wrap img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.6s ease; }
@@ -237,7 +255,10 @@ img { pointer-events:none; -webkit-user-drag:none; }
 
 /* ========== Responsive ========== */
 @media (max-width:768px) {
-  .works-grid { grid-template-columns:1fr; }
+  .work-card { width:280px; }
+  .cat-row { gap:14px; }
+  .cat-tabs { gap:6px; }
+  .cat-tab { padding:8px 18px; font-size:12px; }
   .lightbox .lb-nav { width:100%; left:0; }
   .lightbox .lb-nav button { width:36px; height:36px; font-size:14px; }
   .lightbox .lb-canvas-wrap canvas { max-height:50vh; }
@@ -376,10 +397,10 @@ img { pointer-events:none; -webkit-user-drag:none; }
   <div class="container">
     <div class="section-header">
       <h2>设计作品</h2>
-      <p>博物馆 · 企业馆 · 红色文化馆</p>
+      <p>博物馆 · 企业馆 · 红色文化 · 个人创作</p>
       <div class="line"></div>
     </div>
-    <div class="filter-bar" id="filterBar" style="display:none;"></div>
+    <div class="cat-tabs" id="catTabs"></div>
     <div id="worksGrid"></div>
   </div>
 </section>
@@ -1040,22 +1061,32 @@ function saveWorksMeta(data) {
 const works = Array.from({length:15}, (_,i) => ({ id: i+1 }));
 
 const WORKS_DEFAULTS = {
-  1:  { title:'鸿蒙生态展示中心', subtitle:'企业展馆 · S-6102m² / H-4m', desc:'基于圆形空间整体打造，联合鸿蒙生态打造成都展示中心，服务西部。' },
-  2:  { title:'海底捞企业展馆', subtitle:'企业展馆 · S-547m² / H-4m', desc:'基于建筑本身的艺术感与调性，空间及展陈设计不落俗套，契合设计语言与氛围；考虑到通道的多场景运用，取巧连接左右展陈空间；材质使用与外部环境贴近，设计理念嫁接到空间内部，视觉延续不割裂。' },
-  3:  { title:'吉林化纤集团企业展馆', subtitle:'企业展馆 · S-1760m² / H-4.5m', desc:'基于建筑的空间使用功能，一楼为集团办公区域改造而来，整体承重墙较多，不利于大型展览的设计；考虑到客户的预算和对于公司发展建设问题，展陈主要面对公司员工和客户，展示公司历史、技术、党建和未来多个部分相结合，呈现一个多功能展厅。目前项目已建成。' },
-  4:  { title:'和邦集团企业展馆', subtitle:'企业展馆 · S-550m² / H-7m', desc:'展厅位于乐山和邦集团新总部地块，集团主要经营矿产、新能源、畜牧等，属于乐山龙头企业。展馆主要面向未来发展，客户接待，展示企业实力。目前项目已建成。' },
-  5:  { title:'天山胜利隧道精神馆', subtitle:'企业展馆 · S-1200m² / H-5m', desc:'展厅位于新疆乌尉高速封闭隧道部分，主要展示中交集团为天山胜利隧道贯通所作贡献及精神。依托隧道工程，展示创新技术与民族精神，推动区域发展与文化交流。' },
-  6:  { title:'四川百年妇女运动史展馆', subtitle:'历史文博 · S-725m² / H-4m', desc:'展厅位于四川省妇联中心，作为省委省政府重点项目，其项目定位为"国际化、现代化、信息化"，集"公益、教育、培训、创客、展示、研究、体验、示范"等功能于一体，是面向全省、辐射西部、服务全省广大妇女儿童、家庭的省级妇女儿童活动阵地，是提高妇女儿童公共服务水平的重要民生项目。' },
-  7:  { title:'茅台文化体验馆', subtitle:'历史文博 · S-1600m² / H-4m', desc:'展厅位于成都某茅台展销处，设计本展厅旨在为没有去过茅台镇的人群，以及没有了解过茅台的客户以及参观群体提供细致且全面的讲解，并转化为客户或者目标客户。展馆分一楼与负一楼两层空间。' },
-  8:  { title:'乐山根书博物馆', subtitle:'历史文博 · 多元业态融合', desc:'多元业态深度融合，商业运营结合根书产业，文创衍生与研学培训并举。包含根书博物馆、多功能/临展空间、根书等工艺美术作品销售展厅、研学教室/办公运营空间、多功能研学教室/工业主题咖啡、大师工作室、巨型"福"根书装置。目前项目已建成运营。' },
-  9:  { title:'扬州考古博物馆', subtitle:'历史文博 · S-4000m² / H-4.5m', desc:'国家十四五规划要求建设20个国家重点地区考古标准库房，初步完成基础设施建设和设备要求；由浙江省旅投牵头，项目双线并行，既要满足考古文物的展示和收藏，又要兼顾文旅。含漫游视频。' },
-  10: { title:'雪山', subtitle:'个人作品 · 渲染作品', desc:'3D场景渲染作品，展现自然景观的艺术表现力与光影氛围塑造能力。' },
-  11: { title:'未知星球', subtitle:'个人作品 · 渲染作品', desc:'3D科幻场景渲染作品，探索宇宙空间的视觉想象与材质表现技法。' },
-  12: { title:'插画作品 Ⅰ', subtitle:'个人作品 · 手绘插画', desc:'原创手绘插画系列之一，体现线条艺术与色彩表达的融合探索。' },
-  13: { title:'插画作品 Ⅱ', subtitle:'个人作品 · 手绘插画', desc:'原创手绘插画系列之二，展现人物造型与叙事性画面构图能力。' },
-  14: { title:'插画作品 Ⅲ', subtitle:'个人作品 · 手绘插画', desc:'原创手绘插画系列之三，探索不同风格的手绘表现语言。' },
-  15: { title:'插画作品 Ⅳ+Ⅴ', subtitle:'个人作品 · 手绘插画 ×2', desc:'原创手绘插画系列之四、五合集，呈现完整的个人插画创作体系与多元风格实践。' }
+  1:  { title:'鸿蒙生态展示中心', subtitle:'企业展馆 · S-6102m² / H-4m', desc:'基于圆形空间整体打造，联合鸿蒙生态打造成都展示中心，服务西部。', category:'enterprise' },
+  2:  { title:'海底捞企业展馆', subtitle:'企业展馆 · S-547m² / H-4m', desc:'基于建筑本身的艺术感与调性，空间及展陈设计不落俗套，契合设计语言与氛围；考虑到通道的多场景运用，取巧连接左右展陈空间；材质使用与外部环境贴近，设计理念嫁接到空间内部，视觉延续不割裂。含漫游视频。', category:'enterprise' },
+  3:  { title:'吉林化纤集团企业展馆', subtitle:'企业展馆 · S-1760m² / H-4.5m', desc:'基于建筑的空间使用功能，一楼为集团办公区域改造而来，整体承重墙较多，不利于大型展览的设计；考虑到客户的预算和对于公司发展建设问题，展陈主要面对公司员工和客户，展示公司历史、技术、党建和未来多个部分相结合，呈现一个多功能展厅。目前项目已建成。', category:'enterprise' },
+  4:  { title:'和邦集团企业展馆', subtitle:'企业展馆 · S-550m² / H-7m', desc:'展厅位于乐山和邦集团新总部地块，集团主要经营矿产、新能源、畜牧等，属于乐山龙头企业。展馆主要面向未来发展，客户接待，展示企业实力。目前项目已建成。', category:'enterprise' },
+  5:  { title:'天山胜利隧道精神馆', subtitle:'企业展馆 · S-1200m² / H-5m', desc:'展厅位于新疆乌尉高速封闭隧道部分，主要展示中交集团为天山胜利隧道贯通所作贡献及精神。依托隧道工程，展示创新技术与民族精神，推动区域发展与文化交流。', category:'enterprise' },
+  6:  { title:'四川百年妇女运动史展馆', subtitle:'红色文化 · S-725m² / H-4m', desc:'展厅位于四川省妇联中心，作为省委省政府重点项目，其项目定位为"国际化、现代化、信息化"，集"公益、教育、培训、创客、展示、研究、体验、示范"等功能于一体，是面向全省、辐射西部、服务全省广大妇女儿童、家庭的省级妇女儿童活动阵地。', category:'red' },
+  7:  { title:'茅台文化体验馆', subtitle:'博物馆 · S-1600m² / H-4m', desc:'展厅位于成都某茅台展销处，设计本展厅旨在为没有去过茅台镇的人群以及没有了解过茅台的客户提供细致且全面的讲解，并转化为目标客户。展馆分一楼与负一楼两层空间。', category:'museum' },
+  8:  { title:'乐山根书博物馆', subtitle:'博物馆 · 多元业态融合 · 已建成运营', desc:'多元业态深度融合，商业运营结合根书产业，文创衍生与研学培训并举。包含根书博物馆、多功能/临展空间、根书工艺美术作品销售展厅、研学教室/办公运营空间、工业主题咖啡、大师工作室、巨型"福"根书装置。', category:'museum' },
+  9:  { title:'扬州考古博物馆', subtitle:'博物馆 · S-4000m² / H-4.5m', desc:'国家十四五规划要求建设20个国家重点地区考古标准库房，初步完成基础设施建设和设备要求；由浙江省旅投牵头，项目双线并行，既要满足考古文物的展示和收藏，又要兼顾文旅。含漫游视频。', category:'museum' },
+  10: { title:'雪山', subtitle:'个人作品 · 渲染作品', desc:'3D场景渲染作品，展现自然景观的艺术表现力与光影氛围塑造能力。', category:'personal' },
+  11: { title:'未知星球', subtitle:'个人作品 · 渲染作品', desc:'3D科幻场景渲染作品，探索宇宙空间的视觉想象与材质表现技法。', category:'personal' },
+  12: { title:'插画作品 Ⅰ', subtitle:'个人作品 · 手绘插画', desc:'原创手绘插画系列之一，体现线条艺术与色彩表达的融合探索。', category:'personal' },
+  13: { title:'插画作品 Ⅱ', subtitle:'个人作品 · 手绘插画', desc:'原创手绘插画系列之二，展现人物造型与叙事性画面构图能力。', category:'personal' },
+  14: { title:'插画作品 Ⅲ', subtitle:'个人作品 · 手绘插画', desc:'原创手绘插画系列之三，探索不同风格的手绘表现语言。', category:'personal' },
+  15: { title:'插画作品 Ⅳ+Ⅴ', subtitle:'个人作品 · 手绘插画 ×2', desc:'原创手绘插画系列之四、五合集，呈现完整的个人插画创作体系与多元风格实践。', category:'personal' }
 };
+
+// 分类定义
+const CATEGORIES = {
+  all:   { label:'全部作品', dot:null, color:'' },
+  museum:    { label:'🏛 博物馆',    dot:'museum',    color:'#5b8def' },
+  enterprise: { label:'🏢 企业馆',    dot:'enterprise', color:'#8b6ce0' },
+  red:        { label:'🚩 红色文化',  dot:'red',       color:'#e06c9f' },
+  personal:   { label:'✨ 个人作品',   dot:'personal',  color:'#26a69a' }
+};
+let currentCategory = 'all';
 
 function getWorkMeta(id) {
   const meta = getWorksMeta();
@@ -1092,105 +1123,212 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 let currentFilter = 'all';
 let currentWorks  = works;
 
+let currentWorks = [];
+
+function getWorkCategory(id) {
+  const meta = getWorkMeta(id);
+  return meta.category || 'personal';
+}
+
+function buildCatTabs(filteredWorks) {
+  const tabs = document.getElementById('catTabs');
+  if (!tabs) return;
+  // 统计每个分类的数量
+  const counts = { all: filteredWorks.length };
+  filteredWorks.forEach(w => {
+    const cat = getWorkCategory(w.id);
+    counts[cat] = (counts[cat]||0) + 1;
+  });
+  tabs.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
+    if (key !== 'all' && !counts[key]) return '';
+    const active = key === currentCategory ? ' active' : '';
+    const countHtml = `<span class="cat-count">${counts[key]||0}</span>`;
+    return `<button class="cat-tab${active}" data-cat="${key}">${cat.label}${countHtml}</button>`;
+  }).join('');
+
+  tabs.querySelectorAll('.cat-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCategory = btn.dataset.cat;
+      buildCatTabs(currentWorks);
+      renderWorksByCategory();
+    });
+  });
+}
+
+function createCard(w, i, customImages) {
+  const meta = getWorkMeta(w.id);
+  const hasCustom = !!(customImages[w.id] || customImages[String(w.id)]);
+  const cat = getWorkCategory(w.id);
+  const card = document.createElement('div');
+  card.className = 'work-card' + (hasCustom ? ' has-custom-img' : '');
+  card.style.transitionDelay = `${(i%6)*0.06}s`;
+  card.dataset.category = cat;
+
+  const uploadHTML = isEditMode ? `
+    <div class="card-upload-overlay">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">${hasCustom?'点击替换图片':'点击上传效果图'}</div>
+      <div class="upload-hint">JPG / PNG / WebP · 自动压缩</div>
+      <div class="card-actions">
+        <label class="card-action-btn" for="up_${w.id}">上传/替换</label>
+        ${hasCustom?`<button class="card-action-btn dl" data-dl="${w.id}">⬇ 下载</button><button class="card-action-btn del" data-del="${w.id}">删除</button>`:''}
+      </div>
+      <input type="file" id="up_${w.id}" accept="image/*" style="display:none" data-wid="${w.id}">
+    </div>` : '';
+
+  const editHint = isEditMode ? ' edit-field' : '';
+  const titlePlaceholder  = isEditMode ? ' data-placeholder="点击编辑项目名称"' : '';
+  const subPlaceholder    = isEditMode ? ' data-placeholder="点击编辑副标题"' : '';
+  const descPlaceholder   = isEditMode ? ' data-placeholder="点击编辑项目描述"' : '';
+  const catLabel = CATEGORIES[cat] ? CATEGORIES[cat].label.replace(/[^\u4e00-\u9fa5a-zA-Z]/g,'') : '';
+
+  card.innerHTML = `
+    <div class="glow-hover"></div>
+    <div class="thumb-wrap" id="tw_${w.id}">${uploadHTML}</div>
+    <div class="info">
+      <span class="tag ${cat}">${catLabel}</span>
+      <h3 class="field-title${editHint}"${titlePlaceholder} data-fid="${w.id}" data-ftype="title">${meta.title}</h3>
+      <p class="sub field-sub${editHint}"${subPlaceholder} data-fid="${w.id}" data-ftype="subtitle">${meta.subtitle}</p>
+      <p class="brief field-desc${editHint}"${descPlaceholder} data-fid="${w.id}" data-ftype="desc">${(meta.desc||'').slice(0,60)}${meta.desc&&meta.desc.length>60?'...':''}</p>
+    </div>`;
+
+  // Click → lightbox
+  card.addEventListener('click', e => {
+    if (isEditMode && e.target.closest('.card-upload-overlay')) return;
+    if (isEditMode && e.target.closest('.edit-field')) return;
+    // Find index in currentWorks for lightbox
+    const idx = currentWorks.findIndex(cw => cw.id === w.id);
+    if (idx >= 0) openLightbox(idx);
+  });
+
+  // Render thumbnail
+  const tw = document.getElementById('tw_' + w.id);
+  if (hasCustom) {
+    renderThumbWithWatermark(tw, getImgSrc(w));
+    if (isEditMode) {
+      tw.insertAdjacentHTML('beforeend', uploadHTML);
+      rebindUploadEvents(tw, w);
+    }
+  } else if (isEditMode) {
+    tw.innerHTML = uploadHTML;
+    rebindUploadEvents(tw, w);
+  }
+
+  // Edit mode inline editing
+  if (isEditMode) {
+    card.querySelectorAll('.edit-field').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        if (el.querySelector('textarea,input')) return;
+        const ftype = el.dataset.ftype;
+        const fid   = parseInt(el.dataset.fid);
+        const meta  = getWorkMeta(fid);
+        const val   = meta[ftype] || '';
+
+        if (ftype === 'desc') {
+          const ta = document.createElement('textarea');
+          ta.value = val;
+          ta.style.cssText = 'width:100%;min-height:80px;background:rgba(255,255,255,0.08);border:1px solid var(--accent-blue);border-radius:6px;color:var(--text-primary);font-family:var(--font);font-size:12px;padding:6px 8px;resize:vertical;outline:none;line-height:1.6;';
+          el.innerHTML = ''; el.appendChild(ta); ta.focus();
+          ta.addEventListener('blur', () => saveField(fid, ftype, ta.value.trim()));
+          ta.addEventListener('keydown', e => { if (e.key==='Escape') ta.blur(); });
+        } else {
+          const inp = document.createElement('input'); inp.type='text'; inp.value=val;
+          inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.08);border:1px solid var(--accent-blue);border-radius:6px;color:var(--text-primary);font-family:var(--font);font-size:inherit;padding:4px 8px;outline:none;';
+          el.innerHTML=''; el.appendChild(inp); inp.focus(); inp.select();
+          inp.addEventListener('blur', () => saveField(fid, ftype, inp.value.trim()));
+          inp.addEventListener('keydown', e => { if (e.key==='Enter'||e.key==='Escape') inp.blur(); });
+        }
+      });
+    });
+  }
+
+  return card;
+}
+
+function renderWorksByCategory() {
+  const grid = document.getElementById('worksGrid');
+  if (!grid) return;
+  grid.className = 'works-by-category';
+  grid.innerHTML = '';
+
+  const customImages = getCustomImages();
+
+  if (currentCategory === 'all') {
+    // 按分类分组显示
+    const groups = {};
+    works.forEach(w => {
+      if (!isEditMode) {
+        if (!(customImages[w.id] || customImages[String(w.id)])) return;
+      }
+      const cat = getWorkCategory(w.id);
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(w);
+    });
+
+    const catOrder = ['museum','enterprise','red','personal'];
+    catOrder.forEach(cat => {
+      if (!groups[cat] || groups[cat].length === 0) return;
+      const catInfo = CATEGORIES[cat];
+      const section = document.createElement('div');
+      section.className = 'cat-section';
+      section.innerHTML = `
+        <div class="cat-section-header">
+          <span class="cat-dot ${catInfo.dot||''}"></span>
+          <h3>${catInfo.label}</h3>
+          <span class="cat-count-label">${groups[cat].length} 项作品</span>
+        </div>`;
+      const row = document.createElement('div');
+      row.className = 'cat-row';
+      groups[cat].forEach((w, i) => row.appendChild(createCard(w, i, customImages)));
+      section.appendChild(row);
+      grid.appendChild(section);
+    });
+
+    if (Object.keys(groups).length === 0 && !isEditMode) {
+      grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:80px 0;letter-spacing:1px;">暂无作品展示</p>';
+    }
+  } else {
+    // 单分类视图：一行横向滚动
+    const catInfo = CATEGORIES[currentCategory];
+    const section = document.createElement('div');
+    section.className = 'cat-section';
+    section.innerHTML = `
+      <div class="cat-section-header">
+        <span class="cat-dot ${catInfo.dot||''}"></span>
+        <h3>${catInfo.label}</h3>
+        <span class="cat-count-label"></span>
+      </div>`;
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+
+    let count = 0;
+    works.forEach((w, i) => {
+      if (!isEditMode) {
+        if (!(customImages[w.id] || customImages[String(w.id)])) return;
+      }
+      if (getWorkCategory(w.id) !== currentCategory) return;
+      row.appendChild(createCard(w, count++, customImages));
+    });
+
+    section.querySelector('.cat-count-label').textContent = `${count} 项作品`;
+    section.appendChild(row);
+    grid.appendChild(section);
+
+    if (count === 0 && !isEditMode) {
+      grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:80px 0;letter-spacing:1px;">该分类暂无作品</p>';
+    }
+  }
+
+  setTimeout(() => { if(observer) observer.disconnect(); observeCards(); }, 50);
+}
+
+// 兼容旧接口
 function renderWorks() {
   const customImages = getCustomImages();
   currentWorks = isEditMode ? works : works.filter(w => !!(customImages[w.id] || customImages[String(w.id)]));
-  grid.innerHTML = '';
-
-  currentWorks.forEach((w, i) => {
-    const meta = getWorkMeta(w.id);
-    const hasCustom = !!(customImages[w.id] || customImages[String(w.id)]);
-    const card = document.createElement('div');
-    card.className = 'work-card' + (hasCustom ? ' has-custom-img' : '');
-    card.style.transitionDelay = `${(i%6)*0.06}s`;
-
-    const uploadHTML = isEditMode ? `
-      <div class="card-upload-overlay">
-        <div class="upload-icon">📷</div>
-        <div class="upload-text">${hasCustom?'点击替换图片':'点击上传效果图'}</div>
-        <div class="upload-hint">JPG / PNG / WebP · 自动压缩</div>
-        <div class="card-actions">
-          <label class="card-action-btn" for="up_${w.id}">上传/替换</label>
-          ${hasCustom?`<button class="card-action-btn dl" data-dl="${w.id}">⬇ 下载</button><button class="card-action-btn del" data-del="${w.id}">删除</button>`:''}
-        </div>
-        <input type="file" id="up_${w.id}" accept="image/*" style="display:none" data-wid="${w.id}">
-      </div>` : '';
-
-    const editHint = isEditMode ? ' edit-field' : '';
-    const titlePlaceholder  = isEditMode ? ' data-placeholder="点击编辑项目名称"' : '';
-    const subPlaceholder    = isEditMode ? ' data-placeholder="点击编辑副标题"' : '';
-    const descPlaceholder   = isEditMode ? ' data-placeholder="点击编辑项目描述"' : '';
-
-    card.innerHTML = `
-      <div class="glow-hover"></div>
-      <div class="thumb-wrap" id="tw_${w.id}">${uploadHTML}</div>
-      <div class="info">
-        <span class="slot-num">No.${w.id}</span>
-        <h3 class="field-title${editHint}"${titlePlaceholder} data-fid="${w.id}" data-ftype="title">${meta.title}</h3>
-        <p class="sub field-sub${editHint}"${subPlaceholder} data-fid="${w.id}" data-ftype="subtitle">${meta.subtitle}</p>
-        <p class="brief field-desc${editHint}"${descPlaceholder} data-fid="${w.id}" data-ftype="desc">${(meta.desc||'').slice(0,60)}${meta.desc&&meta.desc.length>60?'...':''}</p>
-      </div>`;
-
-    card.dataset.index = i;
-    card.addEventListener('click', e => {
-      if (isEditMode && e.target.closest('.card-upload-overlay')) return;
-      if (isEditMode && e.target.closest('.edit-field')) return;
-      openLightbox(i);
-    });
-    grid.appendChild(card);
-
-    const tw = document.getElementById('tw_' + w.id);
-    if (hasCustom) {
-      renderThumbWithWatermark(tw, getImgSrc(w));
-      if (isEditMode) {
-        tw.insertAdjacentHTML('beforeend', uploadHTML);
-        rebindUploadEvents(tw, w);
-      }
-    } else if (isEditMode) {
-      tw.innerHTML = uploadHTML;
-      rebindUploadEvents(tw, w);
-    }
-
-    if (isEditMode) {
-      card.querySelectorAll('.edit-field').forEach(el => {
-        el.addEventListener('click', e => {
-          e.stopPropagation();
-          if (el.querySelector('textarea,input')) return;
-          const ftype = el.dataset.ftype;
-          const fid   = parseInt(el.dataset.fid);
-          const meta  = getWorkMeta(fid);
-          const val   = meta[ftype] || '';
-
-          if (ftype === 'desc') {
-            const ta = document.createElement('textarea');
-            ta.value = val;
-            ta.style.cssText = 'width:100%;min-height:80px;background:rgba(255,255,255,0.08);border:1px solid var(--accent-blue);border-radius:6px;color:var(--text-primary);font-family:var(--font);font-size:12px;padding:6px 8px;resize:vertical;outline:none;line-height:1.6;';
-            el.innerHTML = '';
-            el.appendChild(ta);
-            ta.focus();
-            ta.addEventListener('blur', () => saveField(fid, ftype, ta.value.trim()));
-            ta.addEventListener('keydown', e => { if (e.key==='Escape') ta.blur(); });
-          } else {
-            const inp = document.createElement('input');
-            inp.type = 'text';
-            inp.value = val;
-            inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.08);border:1px solid var(--accent-blue);border-radius:6px;color:var(--text-primary);font-family:var(--font);font-size:inherit;padding:4px 8px;outline:none;';
-            el.innerHTML = '';
-            el.appendChild(inp);
-            inp.focus(); inp.select();
-            inp.addEventListener('blur', () => saveField(fid, ftype, inp.value.trim()));
-            inp.addEventListener('keydown', e => { if (e.key==='Enter'||e.key==='Escape') inp.blur(); });
-          }
-        });
-      });
-    }
-  });
-
-  if (!isEditMode && currentWorks.length === 0) {
-    grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:80px 0;letter-spacing:1px;grid-column:1/-1;">暂无作品展示</p>';
-  }
-
-  setTimeout(()=>{ if(observer) observer.disconnect(); observeCards(); }, 50);
+  buildCatTabs(currentWorks);
+  renderWorksByCategory();
 }
 
 function rebindUploadEvents(tw, w) {
