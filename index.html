@@ -1212,7 +1212,7 @@ function createCard(w, i, customImages) {
   });
 
   // Render thumbnail
-  const tw = document.getElementById('tw_' + w.id);
+  const tw = card.querySelector('#tw_' + w.id);
   if (hasCustom) {
     renderThumbWithWatermark(tw, getImgSrc(w));
     if (isEditMode) {
