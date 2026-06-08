@@ -547,7 +547,7 @@ async function loadFromGitHub() {
           );
           if (res.ok) {
             const b64 = await res.text();
-            ghImagesCache[id] = b64.trim();
+            ghImagesCache[id] = 'data:image/jpeg;base64,' + b64.trim();
           }
         } catch {}
       });
