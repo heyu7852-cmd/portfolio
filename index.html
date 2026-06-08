@@ -210,6 +210,16 @@ body {
 .share-exp-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
 .share-exp-btn.active { border-color:var(--accent-blue); background:rgba(91,141,239,0.15); color:var(--accent-blue); }
 
+/* Slot number badge */
+.slot-num { display:inline-block; font-size:10px; letter-spacing:2px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); border-radius:10px; padding:2px 10px; margin-bottom:8px; }
+
+/* Editable fields in edit mode */
+.edit-field { cursor:text; border-radius:4px; transition:background 0.2s; position:relative; }
+.edit-field:hover { background:rgba(91,141,239,0.08); }
+.edit-field:hover::after { content:attr(data-placeholder) ' ✏️'; position:absolute; top:50%; right:4px; transform:translateY(-50%); font-size:10px; color:rgba(91,141,239,0.6); pointer-events:none; white-space:nowrap; }
+.edit-field textarea, .edit-field input { display:block; }
+
+
 /* Has custom image indicator */
 .work-card.has-custom-img .thumb-wrap::after { content:'✓ 已传图'; position:absolute; top:8px; right:8px; z-index:4; padding:3px 10px; border-radius:10px; font-size:10px; letter-spacing:1px; background:rgba(91,141,239,0.25); color:var(--accent-blue); border:1px solid rgba(91,141,239,0.35); pointer-events:none; }
 
@@ -342,7 +352,7 @@ img { pointer-events:none; -webkit-user-drag:none; }
       <p>博物馆 · 企业馆 · 红色文化馆</p>
       <div class="line"></div>
     </div>
-    <div class="filter-bar" id="filterBar">
+    <div class="filter-bar" id="filterBar" style="display:none;">
       <button class="filter-btn active" data-filter="all">全部作品</button>
       <button class="filter-btn" data-filter="museum">博物馆</button>
       <button class="filter-btn" data-filter="enterprise">企业馆</button>
@@ -451,7 +461,7 @@ function getCustomImages() {
   catch { return {}; }
 }
 function saveCustomImages(data) { localStorage.setItem(IMG_KEY, JSON.stringify(data)); }
-function getImgSrc(work) { const c=getCustomImages(); return c[work.id]||work.img; }
+function getImgSrc(work) { const c=getCustomImages(); return c[work.id]||''; }
 
 function uploadImage(workId, file, cb) {
   if (!file || !file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
@@ -469,13 +479,13 @@ function uploadImage(workId, file, cb) {
 function removeImage(workId) {
   if (!confirm('确定删除这张图片？将恢复为占位图。')) return;
   const d = getCustomImages(); delete d[workId]; saveCustomImages(d);
-  renderWorks(currentFilter);
+  renderWorks();
 }
 
 function clearAllImages() {
   if (!confirm('确定清空所有已上传的图片？')) return;
   localStorage.removeItem(IMG_KEY);
-  renderWorks(currentFilter);
+  renderWorks();
 }
 
 // 管理模式：下载某个作品的原始图（不带水印）
@@ -508,7 +518,7 @@ function importData(file) {
         saveCustomImages(d);
       }
       if (data.wmCfg) saveWmCfg(data.wmCfg);
-      renderWorks(currentFilter);
+      renderWorks();
       alert('成功导入 ' + Object.keys(data.customImages||{}).length + ' 张图片！');
     } catch(err) { alert('文件解析失败：' + err.message); }
   };
@@ -623,7 +633,7 @@ if (isEditMode) {
   document.getElementById('wmSave').addEventListener('click', ()=>{
     saveWmCfg({ text:document.getElementById('wmText').value.trim()||'何宇', opacity:parseInt(document.getElementById('wmOpacity').value), density:document.getElementById('wmDensity').value });
     modal.style.display='none';
-    renderWorks(currentFilter); // 刷新卡片缩略图水印
+    renderWorks(); // 刷新卡片缩略图水印
   });
   document.getElementById('wmCancel').addEventListener('click', ()=>modal.style.display='none');
 
@@ -694,34 +704,23 @@ if (isEditMode) {
 }
 
 /* ==========================================================
-   Works Data
+   Works Data — 8个固定槽位，内容从localStorage读取
    ========================================================== */
-const works = [
-  // --- 博物馆 ---
-  { id:1, cat:'museum', title:'理县革命老区博物馆', subtitle:'红色+民族双主题融合', desc:'272.4㎡序厅设计。深沉中国红主调，融合暖棕金铜色金属饰面与藏羌传统回纹浮雕。穹顶暖金色圆形光晕聚焦，两侧立柱融入羌族碉楼石砌肌理。深色哑光大理石地面，庄重沉浸氛围。', img:'https://picsum.photos/seed/museum01/800/600' },
-  { id:2, cat:'museum', title:'上虞博物馆', subtitle:'线性时间型叙事空间', desc:'历史叙事类博物馆空间设计。沿时间轴展开的历史长河动线，展墙嵌入图文板与多媒体屏交错排列。暗环境重点照明，突出文物展品。暖棕大地色调，木质展示框架营造温润质感。', img:'https://picsum.photos/seed/museum02/800/600' },
-  { id:3, cat:'museum', title:'龙华烈士纪念馆', subtitle:'向心汇聚型红色主题', desc:'红色主题纪念馆空间设计。中央大型纪念装置，环形参观动线，高挑空穹顶。主色调为深沉革命红+金色，洗墙灯突出墙面浮雕叙事内容。庄严肃穆氛围，沉浸式光影设计。', img:'https://picsum.photos/seed/museum03/800/600' },
-  { id:4, cat:'museum', title:'贵州民族博物馆', subtitle:'有机曲线型民族主题', desc:'民族文化博物馆空间设计。弧形曲面墙面模拟山水形态，展墙融入苗绣、蜡染等民族纹样镂空透光处理。暖色灯光营造温馨氛围，地面深色石材。民族手工艺展示与数字互动结合。', img:'https://picsum.photos/seed/museum04/800/600' },
-  { id:5, cat:'museum', title:'城市历史文化展馆', subtitle:'时空穿越沉浸体验', desc:'城市博物馆设计。入口时光隧道动线，两侧镜面玻璃+LED灯带营造穿越感。主展区阵列式灯箱矩阵展示城市老照片，对比现代影像。灰色工业风+暖色局部点缀。', img:'https://picsum.photos/seed/museum05/800/600' },
-  { id:6, cat:'museum', title:'非遗博物馆', subtitle:'传统工艺数字活化', desc:'非物质文化遗产展示馆空间设计。暗色调背景衬托展品，展墙采用传统建筑元素（花窗、斗拱）的现代转译。设置手工艺互动体验区，灯光聚焦工艺细节。原木色+深灰色搭配。', img:'https://picsum.photos/seed/museum06/800/600' },
-  { id:7, cat:'museum', title:'自然生态科普馆', subtitle:'沉浸式生态体验空间', desc:'自然科学博物馆设计。中央大型生态造景装置，弧形LED环幕展示四季变化。蓝色+绿色渐变光效营造自然氛围，地面模拟不同生态材质。互动科普展项融合多媒体触控。', img:'https://picsum.photos/seed/museum07/800/600' },
-  // --- 企业馆 ---
-  { id:8, cat:'enterprise', title:'易普力30周年企业文化展厅', subtitle:'光与火的诗篇', desc:'513㎡央企30周年展厅。能建红#E60012+工程蓝+工业灰色彩体系。入口大型浮雕墙讲述企业30年历程，核心区弧幕播放品牌影片，尾厅设置智能互动沙盘。专业级工业展厅。', img:'https://picsum.photos/seed/enterprise01/800/600' },
-  { id:9, cat:'enterprise', title:'中梁山智慧大修基地展厅', subtitle:'智绘轨道·质领未来', desc:'轨道交通工业展厅。6大展区：序厅→数字沙盘→核心主展区（38%）→数字孪生（36%）→党建区→尾厅。立体数字沙盘+飞屏联动、智慧魔方互动×5、1:80实体沙盘。科技蓝+工业灰。', img:'https://picsum.photos/seed/enterprise02/800/600' },
-  { id:10, cat:'enterprise', title:'科技企业创新展厅', subtitle:'未来科技·沉浸体验', desc:'高新科技企业展厅设计。通透玻璃幕墙入口，白色+蓝色科技色调，大面积LED互动屏。中央悬浮装置艺术品，地面镜面反射营造无限延伸感。机器人互动区+产品实物展示。', img:'https://picsum.photos/seed/enterprise03/800/600' },
-  { id:11, cat:'enterprise', title:'集团品牌馆', subtitle:'品牌叙事·文化传承', desc:'大型企业集团品牌馆空间设计。入口品牌时光走廊，两侧墙面曲面展示集团里程碑。中心区全息投影企业沙盘，环形展示墙配合灯光序列。深灰+香槟金高级配色，商业质感。', img:'https://picsum.photos/seed/enterprise04/800/600' },
-  { id:12, cat:'enterprise', title:'产业创新体验中心', subtitle:'科技+产业融合空间', desc:'产业园区展示中心设计。开敞式大空间，顶部裸露工业风保留原建筑肌理。大型多媒体互动展项，灵活布局可满足展览+会议+发布多重功能。工业灰+蓝绿色点缀。', img:'https://picsum.photos/seed/enterprise05/800/600' },
-  { id:13, cat:'enterprise', title:'工业园区展示厅', subtitle:'园区规划·产业布局', desc:'工业园区规划展示馆。中央超大型物理沙盘+顶部LED天幕联动，立体展示园区全貌。墙面透明屏叠加展示产业数据。未来科技风格设计语言，蓝灰色调为主，暗环境沉浸式体验。', img:'https://picsum.photos/seed/enterprise06/800/600' },
-  { id:14, cat:'enterprise', title:'金融企业历史陈列馆', subtitle:'金融文化·品牌沉淀', desc:'金融机构企业馆设计。稳重深色基调+金色点缀，木质展示框架营造品质感。用金融数据可视化作为展陈元素，灯箱阵列展示历年业绩。庄重专业氛围，私密洽谈区嵌入展区。', img:'https://picsum.photos/seed/enterprise07/800/600' },
-  // --- 红色文化馆 ---
-  { id:15, cat:'red', title:'党建教育展厅', subtitle:'红色引擎·创新引领', desc:'国企党建展厅一体化设计。中国红+暖金色主调，党建文化展板规整排列。顶部暖色灯光营造庄重氛围。设入党宣誓区和先锋党员展示区。数字化互动屏展示党建成果数据。', img:'https://picsum.photos/seed/red01/800/600' },
-  { id:16, cat:'red', title:'革命历史纪念馆', subtitle:'红色记忆·薪火相传', desc:'革命历史类展馆空间设计。暗红色主调，大型浮雕墙开篇叙事，实物展品+图文板结合。灯光聚焦展品，墙面嵌入多媒体屏播放历史影像。庄严肃穆，沉浸式光影氛围。', img:'https://picsum.photos/seed/red02/800/600' },
-  { id:17, cat:'red', title:'廉政教育基地', subtitle:'清正廉洁·警钟长鸣', desc:'廉政教育主题展馆。白色+深灰主调，干净利落的极简风格。大型LED屏幕展示警示案例，互动区设置廉洁承诺签名终端。设计语言克制、理性，营造反思与警醒空间氛围。', img:'https://picsum.photos/seed/red03/800/600' },
-  { id:18, cat:'red', title:'党史陈列馆', subtitle:'百年征程·初心不改', desc:'党史主题陈列馆空间设计。以时间轴为主线，分区展示党的奋斗历程。红色渐变墙面+暖色灯带，展柜内文物重点照明。设置沉浸式影像厅，环形屏幕播放党史纪录片。', img:'https://picsum.photos/seed/red04/800/600' },
-  { id:19, cat:'red', title:'红色文创体验馆', subtitle:'红色文化·创意赋能', desc:'红色文化创意体验空间。打破传统红色展馆厚重感，融合现代文创展示手法。红色元素+新媒体艺术结合，设置文创产品展示区和DIY体验区。年轻化设计语言，适合青少年教育。', img:'https://picsum.photos/seed/red05/800/600' },
-  { id:20, cat:'red', title:'烈士纪念馆', subtitle:'英雄不朽·浩气长存', desc:'革命烈士纪念馆空间设计。高挑空序厅，中央烈士雕塑+顶部天光效果。两侧墙面镌刻烈士名录，灯光从墙面透出营造圣洁感。主展区实物+图文+多媒体综合展陈。深红+暖金色调。', img:'https://picsum.photos/seed/red06/800/600' },
-  { id:21, cat:'red', title:'巾帼革命展馆', subtitle:'妇女运动史·巾帼力量', desc:'妇女运动史主题展馆。分区递进型叙事结构，从近代到当代女革命者事迹。展厅色彩柔和，暖色调为主。展墙融入女性元素曲线造型，实物展品+多媒体人物访谈结合展示。', img:'https://picsum.photos/seed/red07/800/600' },
-];
+const WORKS_META_KEY = 'portfolio_works_meta';
+function getWorksMeta() {
+  try { return JSON.parse(localStorage.getItem(WORKS_META_KEY)||'{}'); }
+  catch { return {}; }
+}
+function saveWorksMeta(data) { localStorage.setItem(WORKS_META_KEY, JSON.stringify(data)); }
+
+// 8个固定槽位基础结构（不含内容，内容从localStorage读）
+const works = Array.from({length:8}, (_,i) => ({ id: i+1 }));
+
+// 获取某个槽位的显示内容（优先localStorage，否则显示占位）
+function getWorkMeta(id) {
+  const meta = getWorksMeta();
+  return Object.assign({ title:'作品 '+id, subtitle:'点击编辑副标题', desc:'点击编辑项目描述...' }, meta[id]||{});
+}
 
 /* ==========================================================
    Watermarked Thumbnail — 在卡片缩略图上渲染水印Canvas
@@ -754,16 +753,17 @@ const grid       = document.getElementById('worksGrid');
 const filterBtns = document.querySelectorAll('.filter-btn');
 let currentFilter = 'all';
 let currentWorks  = works;
-const catLabel    = { museum:'博物馆', enterprise:'企业馆', red:'红色文化馆' };
-const catTagClass = { museum:'museum', enterprise:'enterprise', red:'red' };
 
-function renderWorks(filter) {
-  currentWorks = filter==='all' ? works : works.filter(w=>w.cat===filter);
-  grid.innerHTML = '';
+function renderWorks() {
   const customImages = getCustomImages();
-  currentWorks.forEach((w,i) => {
-    const card = document.createElement('div');
+  // 非编辑模式下只显示已上传图片的槽位
+  currentWorks = isEditMode ? works : works.filter(w => !!customImages[w.id]);
+  grid.innerHTML = '';
+
+  currentWorks.forEach((w, i) => {
+    const meta = getWorkMeta(w.id);
     const hasCustom = !!customImages[w.id];
+    const card = document.createElement('div');
     card.className = 'work-card' + (hasCustom ? ' has-custom-img' : '');
     card.style.transitionDelay = `${(i%6)*0.06}s`;
 
@@ -779,59 +779,114 @@ function renderWorks(filter) {
         <input type="file" id="up_${w.id}" accept="image/*" style="display:none" data-wid="${w.id}">
       </div>` : '';
 
+    // 编辑模式：标题/副标题/描述显示编辑提示
+    const editHint = isEditMode ? ' edit-field' : '';
+    const titlePlaceholder  = isEditMode ? ' data-placeholder="点击编辑项目名称"' : '';
+    const subPlaceholder    = isEditMode ? ' data-placeholder="点击编辑副标题"' : '';
+    const descPlaceholder   = isEditMode ? ' data-placeholder="点击编辑项目描述"' : '';
+
     card.innerHTML = `
       <div class="glow-hover"></div>
       <div class="thumb-wrap" id="tw_${w.id}">${uploadHTML}</div>
       <div class="info">
-        <span class="tag ${catTagClass[w.cat]}">${catLabel[w.cat]}</span>
-        <h3>${w.title}</h3>
-        <p class="sub">${w.subtitle}</p>
-        <p class="brief">${w.desc.slice(0,60)}...</p>
+        <span class="slot-num">No.${w.id}</span>
+        <h3 class="field-title${editHint}"${titlePlaceholder} data-fid="${w.id}" data-ftype="title">${meta.title}</h3>
+        <p class="sub field-sub${editHint}"${subPlaceholder} data-fid="${w.id}" data-ftype="subtitle">${meta.subtitle}</p>
+        <p class="brief field-desc${editHint}"${descPlaceholder} data-fid="${w.id}" data-ftype="desc">${(meta.desc||'').slice(0,60)}${meta.desc&&meta.desc.length>60?'...':''}</p>
       </div>`;
 
     card.dataset.index = i;
-    card.addEventListener('click', e=>{
+    card.addEventListener('click', e => {
       if (isEditMode && e.target.closest('.card-upload-overlay')) return;
+      if (isEditMode && e.target.closest('.edit-field')) return;
       openLightbox(i);
     });
     grid.appendChild(card);
 
-    // 渲染带水印的缩略图
+    // 渲染缩略图（有图才渲染，无图显示占位）
     const tw = document.getElementById('tw_' + w.id);
-    renderThumbWithWatermark(tw, getImgSrc(w));
-    // 恢复upload overlay（renderThumbWithWatermark会清空container）
-    if (isEditMode) {
-      tw.insertAdjacentHTML('beforeend', uploadHTML.replace(/\bcard-upload-overlay\b/,'card-upload-overlay'));
-      // 重新绑定上传事件
-      const fileInput = tw.querySelector(`#up_${w.id}`);
-      if (fileInput) {
-        fileInput.addEventListener('change', function(){
-          uploadImage(parseInt(this.dataset.wid), this.files[0], ()=>renderWorks(currentFilter));
-        });
+    if (hasCustom) {
+      renderThumbWithWatermark(tw, getImgSrc(w));
+      if (isEditMode) {
+        tw.insertAdjacentHTML('beforeend', uploadHTML);
+        rebindUploadEvents(tw, w);
       }
-      const delBtn = tw.querySelector('[data-del]');
-      if (delBtn) delBtn.addEventListener('click', e=>{ e.stopPropagation(); removeImage(parseInt(delBtn.dataset.del)); });
-      const dlBtn = tw.querySelector('[data-dl]');
-      if (dlBtn) dlBtn.addEventListener('click', e=>{ e.stopPropagation(); downloadOriginal(parseInt(dlBtn.dataset.dl), w.title); });
-      const uploadLabel = tw.querySelector('label[for="up_'+w.id+'"]');
-      if (uploadLabel) uploadLabel.addEventListener('click', e=>{
-        e.stopPropagation();
-        tw.querySelector('#up_'+w.id)?.click();
+    } else if (isEditMode) {
+      // 编辑模式显示上传占位
+      tw.innerHTML = uploadHTML;
+      rebindUploadEvents(tw, w);
+    } else {
+      // 非编辑且无图：不显示（已被过滤）
+    }
+
+    // 编辑模式：绑定文字内联编辑
+    if (isEditMode) {
+      card.querySelectorAll('.edit-field').forEach(el => {
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          if (el.querySelector('textarea,input')) return; // 已在编辑中
+          const ftype = el.dataset.ftype;
+          const fid   = parseInt(el.dataset.fid);
+          const meta  = getWorkMeta(fid);
+          const val   = meta[ftype] || '';
+
+          if (ftype === 'desc') {
+            const ta = document.createElement('textarea');
+            ta.value = val;
+            ta.style.cssText = 'width:100%;min-height:80px;background:rgba(255,255,255,0.08);border:1px solid var(--accent-blue);border-radius:6px;color:var(--text-primary);font-family:var(--font);font-size:12px;padding:6px 8px;resize:vertical;outline:none;line-height:1.6;';
+            el.innerHTML = '';
+            el.appendChild(ta);
+            ta.focus();
+            ta.addEventListener('blur', () => saveField(fid, ftype, ta.value.trim()));
+            ta.addEventListener('keydown', e => { if (e.key==='Escape') { ta.blur(); } });
+          } else {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.value = val;
+            inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.08);border:1px solid var(--accent-blue);border-radius:6px;color:var(--text-primary);font-family:var(--font);font-size:inherit;padding:4px 8px;outline:none;';
+            el.innerHTML = '';
+            el.appendChild(inp);
+            inp.focus(); inp.select();
+            inp.addEventListener('blur', () => saveField(fid, ftype, inp.value.trim()));
+            inp.addEventListener('keydown', e => { if (e.key==='Enter'||e.key==='Escape') inp.blur(); });
+          }
+        });
       });
     }
   });
+
+  // 无作品时显示空态
+  if (!isEditMode && currentWorks.length === 0) {
+    grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:80px 0;letter-spacing:1px;grid-column:1/-1;">暂无作品展示</p>';
+  }
+
   setTimeout(()=>{ if(observer) observer.disconnect(); observeCards(); }, 50);
 }
-renderWorks('all');
 
-filterBtns.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    filterBtns.forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter = btn.dataset.filter;
-    renderWorks(currentFilter);
-  });
-});
+function rebindUploadEvents(tw, w) {
+  const fileInput = tw.querySelector(`#up_${w.id}`);
+  if (fileInput) {
+    fileInput.addEventListener('change', function(){
+      uploadImage(parseInt(this.dataset.wid), this.files[0], () => renderWorks());
+    });
+  }
+  const delBtn = tw.querySelector('[data-del]');
+  if (delBtn) delBtn.addEventListener('click', e=>{ e.stopPropagation(); removeImage(parseInt(delBtn.dataset.del)); });
+  const dlBtn = tw.querySelector('[data-dl]');
+  if (dlBtn) dlBtn.addEventListener('click', e=>{ e.stopPropagation(); downloadOriginal(parseInt(dlBtn.dataset.dl), getWorkMeta(w.id).title); });
+  const uploadLabel = tw.querySelector('label[for="up_'+w.id+'"]');
+  if (uploadLabel) uploadLabel.addEventListener('click', e=>{ e.stopPropagation(); tw.querySelector('#up_'+w.id)?.click(); });
+}
+
+function saveField(id, ftype, val) {
+  const meta = getWorksMeta();
+  if (!meta[id]) meta[id] = {};
+  meta[id][ftype] = val;
+  saveWorksMeta(meta);
+  renderWorks(); // 刷新卡片
+}
+
+renderWorks();
 
 let observer;
 function observeCards() {
@@ -877,22 +932,24 @@ function renderLbImage(src) {
 
 function openLightbox(i) {
   lbIndex = i;
-  const w = currentWorks[i];
+  const w    = currentWorks[i];
+  const meta = getWorkMeta(w.id);
   renderLbImage(getImgSrc(w));
-  lbTitle.textContent = w.title;
-  lbSub.textContent   = `${catLabel[w.cat]} · ${w.subtitle}`;
-  lbDesc.textContent  = w.desc;
+  lbTitle.textContent = meta.title;
+  lbSub.textContent   = meta.subtitle;
+  lbDesc.textContent  = meta.desc;
   lb.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 function closeLightbox() { lb.classList.remove('open'); document.body.style.overflow = ''; }
 function navLightbox(dir) {
   lbIndex = (lbIndex+dir+currentWorks.length) % currentWorks.length;
-  const w = currentWorks[lbIndex];
+  const w    = currentWorks[lbIndex];
+  const meta = getWorkMeta(w.id);
   renderLbImage(getImgSrc(w));
-  lbTitle.textContent = w.title;
-  lbSub.textContent   = `${catLabel[w.cat]} · ${w.subtitle}`;
-  lbDesc.textContent  = w.desc;
+  lbTitle.textContent = meta.title;
+  lbSub.textContent   = meta.subtitle;
+  lbDesc.textContent  = meta.desc;
 }
 
 document.getElementById('lbClose').addEventListener('click', closeLightbox);
