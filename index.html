@@ -567,8 +567,20 @@ async function loadFromGitHub() {
             { cache: 'no-store' }
           );
           if (res.ok) {
-            const b64 = await res.text();
-            ghImagesCache[id] = 'data:image/jpeg;base64,' + b64.trim();
+            const buf = await res.arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            // 检测是否为二进制JPEG（FF D8开头）还是base64文本
+            if (bytes.length > 2 && bytes[0] === 0xFF && bytes[1] === 0xD8) {
+              // 二进制图片数据 → 转base64
+              let binary = '';
+              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+              ghImagesCache[id] = 'data:image/jpeg;base64,' + btoa(binary);
+            } else {
+              // 已是base64文本
+              const decoder = new TextDecoder('utf-8');
+              const b64 = decoder.decode(bytes).trim();
+              ghImagesCache[id] = 'data:image/jpeg;base64,' + b64;
+            }
           }
         } catch {}
       });
