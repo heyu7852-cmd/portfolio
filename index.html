@@ -1018,7 +1018,7 @@ if (isEditMode) {
 }
 
 /* ==========================================================
-   Works Data — 8个固定槽位
+   Works Data — 15个固定槽位
    ========================================================== */
 const WORKS_META_KEY = 'portfolio_works_meta';
 
@@ -1037,7 +1037,7 @@ function saveWorksMeta(data) {
   }
 }
 
-const works = Array.from({length:8}, (_,i) => ({ id: i+1 }));
+const works = Array.from({length:15}, (_,i) => ({ id: i+1 }));
 
 function getWorkMeta(id) {
   const meta = getWorksMeta();
