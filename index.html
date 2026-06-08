@@ -516,7 +516,7 @@ let ghMetaCache   = {};    // { id: {title, subtitle, desc} }
 let ghWmCache     = null;  // { text, opacity, density }
 
 async function loadFromGitHub() {
-  if (!getGhToken()) return false;
+  // 即使没有Token，公开仓库的数据也可读取（图片+元数据）
   setSyncStatus('syncing', '加载中...');
   try {
     // 并行读取 meta.json 和 wm.json
@@ -1222,13 +1222,12 @@ function saveField(id, ftype, val) {
 (async function init() {
   // 先用本地缓存快速渲染
   renderWorks();
-  // 有Token则从GitHub拉取，拉完再重新渲染
-  if (getGhToken()) {
-    const ok = await loadFromGitHub();
-    if (ok) renderWorks();
-  } else if (isEditMode) {
-    // 编辑模式没有Token，提示设置
-    setSyncStatus('error', '未设置 Token');
+  // 从GitHub拉取公开数据（无需Token），拉完再重新渲染
+  const ok = await loadFromGitHub();
+  if (ok) renderWorks();
+  // 编辑模式下如果没有Token，提示设置
+  if (isEditMode && !getGhToken()) {
+    setSyncStatus('error', '未设置 Token（编辑需Token）');
   }
 })();
 
