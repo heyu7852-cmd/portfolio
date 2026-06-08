@@ -237,6 +237,24 @@ body {
 .lb-dot.active { background:var(--accent-blue); transform:scale(1.3); }
 .lb-dot:hover { background:rgba(255,255,255,0.5); }
 
+/* ========== Lightbox Edit Toolbar (edit mode only) ========== */
+.lb-edit-toolbar {
+  display:none; gap:10px; padding:10px 16px; margin-top:8px;
+  justify-content:center;
+}
+.edit-mode .lb-edit-toolbar.show { display:flex; }
+.lb-edit-btn {
+  padding:8px 18px; border-radius:20px; border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.7);
+  font-family:var(--font); font-size:12px; letter-spacing:0.5px;
+  cursor:pointer; transition:all 0.2s ease;
+}
+.lb-edit-btn:hover { background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.3); }
+.lb-set-cover-btn:hover { background:rgba(74,158,255,0.2); border-color:var(--accent-blue); color:var(--accent-blue); }
+.lb-set-cover-btn.is-cover { background:rgba(74,158,255,0.25); border-color:var(--accent-blue); color:var(--accent-blue); font-weight:600; }
+.lb-set-cover-btn.is-cover::before { content:'✓ '; }
+.lb-delete-img-btn:hover { background:rgba(220,30,30,0.2); border-color:#e06c9f; color:#e06c9f; }
+
 /* ========== Lightbox ========== */
 .lightbox { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.95); backdrop-filter:blur(30px); opacity:0; pointer-events:none; transition:opacity 0.4s ease; }
 .lightbox.open { opacity:1; pointer-events:auto; }
@@ -492,6 +510,10 @@ img { pointer-events:none; -webkit-user-drag:none; }
       <canvas id="lbCanvas"></canvas>
     </div>
     <div class="lb-dots" id="lbDots"></div>
+    <div class="lb-edit-toolbar" id="lbEditToolbar">
+      <button class="lb-edit-btn lb-set-cover-btn" id="lbSetCoverBtn">☆ 设为封面</button>
+      <button class="lb-edit-btn lb-delete-img-btn" id="lbDeleteImgBtn">🗑 删除此图</button>
+    </div>
     <div class="lb-info">
       <h3 id="lbTitle"></h3>
       <p class="sub" id="lbSub"></p>
@@ -1403,24 +1425,22 @@ function createCard(w, i, customImages) {
       // 编辑模式：渲染到独立预览区域，不破坏上传UI
       const preview = tw.querySelector('.card-thumb-preview');
       if (preview) renderThumbWithWatermark(preview, getImgSrc(w));
+      // 绑定事件（上传UI已在card.innerHTML中）
+      rebindUploadEvents(tw, w);
     } else {
       // 访客模式：直接渲染到thumb-wrap
       renderThumbWithWatermark(tw, getImgSrc(w));
     }
     // 多图时显示数量角标
-    const allImgs = getAllImgSrcs(w);
-    if (allImgs.length > 1) {
+    const imgs = getAllImgSrcs(w);
+    if (imgs.length > 1) {
       const badge = document.createElement('div');
       badge.className = 'img-count-badge';
-      badge.textContent = allImgs.length + '张';
+      badge.textContent = imgs.length + '张';
       tw.appendChild(badge);
     }
-    if (isEditMode) {
-      tw.insertAdjacentHTML('beforeend', uploadHTML);
-      rebindUploadEvents(tw, w);
-    }
   } else if (isEditMode) {
-    tw.innerHTML = uploadHTML;
+    // 无图编辑模式：显示空的上传界面
     rebindUploadEvents(tw, w);
   }
 
@@ -1676,6 +1696,52 @@ function updateLbInfo() {
   lbSub.textContent   = meta.subtitle + (imgs.length > 1 ? ' · '+(lbImgIndex+1)+'/'+imgs.length : '');
   lbDesc.textContent  = meta.desc;
   updateLbDots();
+  // 编辑模式：更新工具栏
+  updateLbEditToolbar(w, imgs);
+}
+
+// 灯箱编辑工具栏（单张删除+设为封面）
+function updateLbEditToolbar(work, imgs) {
+  const toolbar = document.getElementById('lbEditToolbar');
+  const setCoverBtn = document.getElementById('lbSetCoverBtn');
+  const delBtn = document.getElementById('lbDeleteImgBtn');
+  if (!toolbar || !isEditMode || !imgs || imgs.length === 0) {
+    if (toolbar) toolbar.classList.remove('show');
+    return;
+  }
+  toolbar.classList.add('show');
+
+  // 更新封面按钮状态
+  const isCover = (getCoverIndex(work.id) === lbImgIndex);
+  if (setCoverBtn) {
+    setCoverBtn.className = 'lb-edit-btn lb-set-cover-btn' + (isCover ? ' is-cover' : '');
+    setCoverBtn.textContent = isCover ? '✓ 当前封面' : '☆ 设为封面';
+    // 重新绑定事件
+    setCoverBtn.onclick = e => {
+      e.stopPropagation();
+      setCoverIndex(work.id, lbImgIndex);
+      updateLbEditToolbar(work, imgs);
+      // 同时刷新卡片
+      renderWorks();
+    };
+  }
+
+  // 删除按钮
+  if (delBtn) {
+    delBtn.onclick = e => {
+      e.stopPropagation();
+      if (imgs.length <= 1) {
+        alert('这是最后一张图，如需删除请使用卡片的「清空」按钮');
+        return;
+      }
+      if (confirm('确定删除第 '+(lbImgIndex+1)+' 张图片？')) {
+        removeImage(work.id, lbImgIndex);
+        // 调整索引
+        if (lbImgIndex >= getLbImages().length) lbImgIndex = Math.max(0, getLbImages().length - 1);
+        updateLbInfo();
+      }
+    };
+  }
 }
 
 function openLightbox(i, imgIdx) {
