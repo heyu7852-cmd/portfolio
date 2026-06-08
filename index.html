@@ -277,6 +277,8 @@ body {
 .edit-sep { width:1px; height:20px; background:var(--glass-border); margin:0 4px; }
 
 /* ========== Card Upload Overlay ========== */
+.card-thumb-preview { position:absolute; inset:0; z-index:1; border-radius:var(--radius-lg); overflow:hidden; }
+.card-thumb-preview canvas, .card-thumb-preview img { width:100%;height:100%;object-fit:cover;display:block; }
 .card-upload-overlay { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); border-radius:var(--radius-lg); opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
 .edit-mode .card-upload-overlay { opacity:1; pointer-events:auto; }
 .card-upload-overlay .upload-icon { width:52px; height:52px; margin-bottom:12px; border:2px dashed rgba(255,255,255,0.25); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--text-muted); transition:all 0.3s; }
@@ -1354,6 +1356,7 @@ function createCard(w, i, customImages) {
   const imgCount = allImgs.length;
   const uploadHTML = isEditMode ? `
     <div class="card-upload-overlay">
+      <div class="card-thumb-preview"></div>
       <div class="upload-icon">📷</div>
       <div class="upload-text">${hasCustom?imgCount+' 张图片 · 点击添加更多':'点击上传效果图'}</div>
       <div class="upload-hint">支持多选 · JPG / PNG / WebP · 自动压缩</div>
@@ -1393,10 +1396,17 @@ function createCard(w, i, customImages) {
     if (idx >= 0) openLightbox(idx);
   });
 
-  // Render thumbnail（使用第一张图）
+  // Render thumbnail（使用封面图）
   const tw = card.querySelector('#tw_' + w.id);
   if (hasCustom) {
-    renderThumbWithWatermark(tw, getImgSrc(w));
+    if (isEditMode) {
+      // 编辑模式：渲染到独立预览区域，不破坏上传UI
+      const preview = tw.querySelector('.card-thumb-preview');
+      if (preview) renderThumbWithWatermark(preview, getImgSrc(w));
+    } else {
+      // 访客模式：直接渲染到thumb-wrap
+      renderThumbWithWatermark(tw, getImgSrc(w));
+    }
     // 多图时显示数量角标
     const allImgs = getAllImgSrcs(w);
     if (allImgs.length > 1) {
