@@ -702,17 +702,66 @@ function getImgSrc(work) {
   return c[work.id] || c[String(work.id)] || '';
 }
 
+/* ========== 智能图片压缩 ========== */
+async function compressImage(file, opts) {
+  opts = Object.assign({ maxW: 2400, maxH: 1800, quality: 0.88, maxSizeMB: 2 }, opts || {});
+  return new Promise((resolve, reject) => {
+    // 非图片直接返回
+    if (!file.type.startsWith('image/')) { reject('非图片文件'); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject('读取失败');
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject('图片加载失败');
+      img.onload = () => {
+        // 计算目标尺寸（等比缩放）
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (w > opts.maxW) { h = Math.round(h * opts.maxW / w); w = opts.maxW; }
+        if (h > opts.maxH) { w = Math.round(w * opts.maxH / h); h = opts.maxH; }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+
+        // 高质量缩放（逐步缩小避免锯齿）
+        if (img.naturalWidth > w * 2) {
+          let tmp = img, tw = img.naturalWidth, th = img.naturalHeight;
+          while (tw > w * 2) {
+            tw = Math.round(tw / 2); th = Math.round(th / 2);
+            const c2 = document.createElement('canvas');
+            c2.width = tw; c2.height = th;
+            c2.getContext('2d').drawImage(tmp, 0, 0, tw, th);
+            tmp = c2;
+          }
+          ctx.drawImage(tmp, 0, 0, w, h);
+        } else {
+          ctx.drawImage(img, 0, 0, w, h);
+        }
+
+        // 输出为JPEG，逐步降低质量直到满足大小限制
+        let q = opts.quality;
+        let dataURL = canvas.toDataURL('image/jpeg', q);
+        while (dataURL.length > opts.maxSizeMB * 1024 * 1024 * 1.37 && q > 0.5) {
+          q -= 0.05;
+          dataURL = canvas.toDataURL('image/jpeg', q);
+        }
+
+        const sizeMB = (dataURL.length * 3 / 4 / 1024 / 1024).toFixed(1);
+        console.log(`[压缩] ${file.name} → ${w}×${h} @Q${q.toFixed(2)} ≈ ${sizeMB}MB`);
+        resolve(dataURL);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function uploadImage(workId, file, cb) {
   if (!file || !file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
-  if (file.size > 8*1024*1024) { alert('图片不能超过8MB，建议先压缩'); return; }
-  const r = new FileReader();
-  r.onload = e => {
-    const dataURL = e.target.result;
-    // 存到内存缓存
+  // 大文件自动压缩，小文件直接用
+  const doSave = (dataURL) => {
     ghImagesCache[workId] = dataURL;
-    // 同步到GitHub（后台进行）
     saveImageToGitHub(workId, dataURL);
-    // 同时保留localStorage备份
     try {
       const d = JSON.parse(localStorage.getItem(IMG_KEY)||'{}');
       d[workId] = dataURL;
@@ -720,7 +769,24 @@ function uploadImage(workId, file, cb) {
     } catch {}
     if (cb) cb(dataURL);
   };
-  r.readAsDataURL(file);
+
+  if (file.size > 1.5 * 1024 * 1024) {
+    // >1.5MB 自动压缩
+    setSyncStatus('syncing', '压缩中...');
+    compressImage(file).then(dataURL => {
+      doSave(dataURL);
+      setSyncStatus('syncing', '上传中...');
+    }).catch(err => {
+      console.warn('压缩失败，使用原图', err);
+      const r = new FileReader();
+      r.onload = e => doSave(e.target.result);
+      r.readAsDataURL(file);
+    });
+  } else {
+    const r = new FileReader();
+    r.onload = e => doSave(e.target.result);
+    r.readAsDataURL(file);
+  }
 }
 
 function removeImage(workId) {
@@ -1024,7 +1090,7 @@ function renderWorks() {
       <div class="card-upload-overlay">
         <div class="upload-icon">📷</div>
         <div class="upload-text">${hasCustom?'点击替换图片':'点击上传效果图'}</div>
-        <div class="upload-hint">JPG / PNG / WebP · 最大8MB</div>
+        <div class="upload-hint">JPG / PNG / WebP · 自动压缩</div>
         <div class="card-actions">
           <label class="card-action-btn" for="up_${w.id}">上传/替换</label>
           ${hasCustom?`<button class="card-action-btn dl" data-dl="${w.id}">⬇ 下载</button><button class="card-action-btn del" data-del="${w.id}">删除</button>`:''}
