@@ -136,6 +136,11 @@ body {
 /* 自定义分类管理（仅编辑模式） */
 .cat-add-btn { border-style:dashed; border-color:var(--glass-border); color:var(--text-muted) !important; }
 .cat-add-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue) !important; background:rgba(91,141,239,0.06) !important; }
+.cat-add-btn {
+  min-width:100px;
+  font-weight:600;
+  letter-spacing:1px;
+}
 .cat-del-btn { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; border:none; background:#e06c9f; color:#fff; font-size:12px; line-height:18px; text-align:center; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; opacity:0; transition:opacity 0.2s; padding:0; box-shadow:0 2px 6px rgba(224,108,159,0.4); }
 .cat-tab:hover .cat-del-btn { opacity:1; }
 .cat-del-btn:hover { background:#d81b60; transform:scale(1.15); }
