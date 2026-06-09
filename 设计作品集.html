@@ -133,6 +133,13 @@ body {
 .cat-tab .cat-count { display:inline-block; min-width:18px; text-align:center; font-size:11px; background:rgba(255,255,255,0.08); border-radius:10px; padding:0 6px; margin-left:6px; line-height:18px; }
 .cat-tab.active .cat-count { background:rgba(255,255,255,0.15); }
 
+/* 自定义分类管理（仅编辑模式） */
+.cat-add-btn { border-style:dashed; border-color:var(--glass-border); color:var(--text-muted) !important; }
+.cat-add-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue) !important; background:rgba(91,141,239,0.06) !important; }
+.cat-del-btn { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; border:none; background:#e06c9f; color:#fff; font-size:12px; line-height:18px; text-align:center; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; opacity:0; transition:opacity 0.2s; padding:0; box-shadow:0 2px 6px rgba(224,108,159,0.4); }
+.cat-tab:hover .cat-del-btn { opacity:1; }
+.cat-del-btn:hover { background:#d81b60; transform:scale(1.15); }
+
 /* ========== Works by Category ========== */
 .works-by-category {}
 .cat-section { margin-bottom:48px; }
@@ -683,6 +690,9 @@ async function loadFromGitHub() {
 
     // 加载封面索引
     await loadCoverIndicesFromGitHub();
+
+    // 加载自定义分类
+    await loadCustomCategoriesFromGitHub();
 
     setSyncStatus('synced', '已同步');
     return true;
@@ -1290,14 +1300,28 @@ const WORKS_DEFAULTS = {
   15: { title:'插画作品 Ⅳ+Ⅴ', subtitle:'个人作品 · 手绘插画 ×2', desc:'原创手绘插画系列之四、五合集，呈现完整的个人插画创作体系与多元风格实践。', category:'personal' }
 };
 
-// 分类定义
-const CATEGORIES = {
-  all:   { label:'全部作品', dot:null, color:'' },
-  museum:    { label:'🏛 博物馆',    dot:'museum',    color:'#5b8def' },
-  enterprise: { label:'🏢 企业馆',    dot:'enterprise', color:'#8b6ce0' },
-  red:        { label:'🚩 红色文化',  dot:'red',       color:'#e06c9f' },
-  personal:   { label:'✨ 个人作品',   dot:'personal',  color:'#26a69a' }
+// 分类定义（内置分类，不可删除）
+const DEFAULT_CATEGORIES = {
+  all:        { label:'全部作品', dot:null, color:'', builtIn:true },
+  museum:     { label:'🏛 博物馆',    dot:'museum',    color:'#5b8def',  builtIn:true },
+  enterprise: { label:'🏢 企业馆',    dot:'enterprise', color:'#8b6ce0',  builtIn:true },
+  red:        { label:'🚩 红色文化',  dot:'red',       color:'#e06c9f',  builtIn:true },
+  personal:   { label:'✨ 个人作品',   dot:'personal',  color:'#26a69a',  builtIn:true }
 };
+// 自定义分类存储
+const CUSTOM_CAT_KEY = 'portfolio_custom_categories';
+let customCategories = {}; // { key: {label, color} }
+
+// 颜色池（自动分配）
+const CAT_COLOR_PALETTE = ['#ff7043','#ab47bc','#26c6da','#66bb6a','#ffa726','#ec407a','#7e57c2','#42a5f5','#d4e157','#8d6e63'];
+
+function getAllCategories() {
+  return Object.assign({}, DEFAULT_CATEGORIES,
+    ...Object.entries(customCategories).map(([k,v]) => ({
+      [k]: { label:v.label, dot:k, color:v.color||CAT_COLOR_PALETTE[Object.keys(customCategories).indexOf(k)%CAT_COLOR_PALETTE.length], builtIn:false }
+    }))
+  );
+}
 let currentCategory = 'all';
 
 function getWorkMeta(id) {
@@ -1344,26 +1368,91 @@ function getWorkCategory(id) {
 function buildCatTabs(filteredWorks) {
   const tabs = document.getElementById('catTabs');
   if (!tabs) return;
+  const cats = getAllCategories();
   // 统计每个分类的数量
   const counts = { all: filteredWorks.length };
   filteredWorks.forEach(w => {
     const cat = getWorkCategory(w.id);
     counts[cat] = (counts[cat]||0) + 1;
   });
-  tabs.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
+  let html = Object.entries(cats).map(([key, cat]) => {
     if (key !== 'all' && !counts[key]) return '';
     const active = key === currentCategory ? ' active' : '';
     const countHtml = `<span class="cat-count">${counts[key]||0}</span>`;
-    return `<button class="cat-tab${active}" data-cat="${key}">${cat.label}${countHtml}</button>`;
+    // 编辑模式：非内置分类显示删除按钮
+    const delBtn = (isEditMode && !cat.builtIn && key !== 'all')
+      ? `<button class="cat-del-btn" data-del-cat="${key}" title="删除此分类">&times;</button>` : '';
+    return `<button class="cat-tab${active}" data-cat="${key}">${delBtn}${cat.label}${countHtml}</button>`;
   }).join('');
+  // 编辑模式：添加分类按钮
+  if (isEditMode) html += '<button class="cat-tab cat-add-btn" id="catAddBtn">＋ 添加分类</button>';
+  tabs.innerHTML = html;
 
-  tabs.querySelectorAll('.cat-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
+  tabs.querySelectorAll('.cat-tab:not(.cat-add-btn)').forEach(btn => {
+    btn.addEventListener('click', e => {
+      if (e.target.classList.contains('cat-del-btn')) return; // 删除按钮单独处理
       currentCategory = btn.dataset.cat;
       buildCatTabs(currentWorks);
       renderWorksByCategory();
     });
   });
+
+  // 删除自定义分类
+  tabs.querySelectorAll('.cat-del-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const catKey = btn.dataset.delCat;
+      if (!confirm('确定删除分类「' + (customCategories[catKey]?.label || catKey) + '」？该分类下的作品将回到默认分类。')) return;
+      delete customCategories[catKey];
+      saveCustomCategories();
+      // 把用这个分类的作品重置为 personal
+      const meta = getWorksMeta();
+      Object.keys(meta).forEach(id => { if (meta[id].category === catKey) delete meta[id].category; });
+      saveWorksMeta(meta);
+      if (currentCategory === catKey) currentCategory = 'all';
+      buildCatTabs(currentWorks);
+      renderWorksByCategory();
+    });
+  });
+
+  // 添加新分类
+  const addBtn = document.getElementById('catAddBtn');
+  if (addBtn) addBtn.addEventListener('click', () => {
+    const name = prompt('输入新分类名称：');
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    // 生成唯一key（取拼音首字母或前2字）
+    let key = trimmed.substring(0, 4);
+    // 避免和内置冲突
+    if (DEFAULT_CATEGORIES[key]) key = 'custom_' + Date.now().toString(36);
+    // 确保key唯一
+    if (customCategories[key]) key = key + '_' + Date.now().toString(36).slice(-3);
+    const colorIdx = Object.keys(customCategories).length % CAT_COLOR_PALETTE.length;
+    customCategories[key] = { label: trimmed, color: CAT_COLOR_PALETTE[colorIdx] };
+    saveCustomCategories();
+    buildCatTabs(currentWorks);
+  });
+}
+
+// 自定义分类的保存/加载
+function saveCustomCategories() {
+  try { localStorage.setItem(CUSTOM_CAT_KEY, JSON.stringify(customCategories)); } catch {}
+  saveCustomCatsToGitHub();
+}
+async function saveCustomCatsToGitHub() {
+  if (!getGhToken()) return;
+  try {
+    await ghWriteFile(GH_DATA_DIR + '/categories.json', JSON.stringify(customCategories), 'Update custom categories');
+  } catch(e) { console.warn('Save categories error:', e); }
+}
+async function loadCustomCategoriesFromGitHub() {
+  try {
+    const raw = await ghReadFile(GH_DATA_DIR + '/categories.json');
+    if (raw) {
+      const d = JSON.parse(raw);
+      Object.assign(customCategories, d);
+    }
+  } catch {}
 }
 
 function createCard(w, i, customImages) {
@@ -1398,7 +1487,8 @@ function createCard(w, i, customImages) {
   const titlePlaceholder  = isEditMode ? ' data-placeholder="点击编辑项目名称"' : '';
   const subPlaceholder    = isEditMode ? ' data-placeholder="点击编辑副标题"' : '';
   const descPlaceholder   = isEditMode ? ' data-placeholder="点击编辑项目描述"' : '';
-  const catLabel = CATEGORIES[cat] ? CATEGORIES[cat].label.replace(/[^\u4e00-\u9fa5a-zA-Z]/g,'') : '';
+  const cats = getAllCategories();
+  const catLabel = cats[cat] ? cats[cat].label.replace(/[^\u4e00-\u9fa5a-zA-Z]/g,'') : '';
 
   card.innerHTML = `
     <div class="glow-hover"></div>
@@ -1497,10 +1587,13 @@ function renderWorksByCategory() {
       groups[cat].push(w);
     });
 
-    const catOrder = ['museum','enterprise','red','personal'];
+    const allCats = getAllCategories();
+    const catOrder = Object.keys(allCats).filter(k => k !== 'all');
+    // 把有作品的自定义分类追加到末尾
+    Object.keys(customCategories).forEach(k => { if (!catOrder.includes(k) && groups[k]) catOrder.push(k); });
     catOrder.forEach(cat => {
       if (!groups[cat] || groups[cat].length === 0) return;
-      const catInfo = CATEGORIES[cat];
+      const catInfo = allCats[cat] || { label:cat, dot:'', color:'#888' };
       const section = document.createElement('div');
       section.className = 'cat-section';
       section.innerHTML = `
@@ -1521,7 +1614,8 @@ function renderWorksByCategory() {
     }
   } else {
     // 单分类视图：一行横向滚动
-    const catInfo = CATEGORIES[currentCategory];
+    const allCats2 = getAllCategories();
+    const catInfo = allCats2[currentCategory] || { label:currentCategory, dot:'', color:'#888' };
     const section = document.createElement('div');
     section.className = 'cat-section';
     section.innerHTML = `
@@ -1609,6 +1703,8 @@ function saveField(id, ftype, val) {
    初始化：从GitHub加载数据后渲染
    ========================================================== */
 (async function init() {
+  // 从localStorage加载自定义分类（快速）
+  try { const d = JSON.parse(localStorage.getItem(CUSTOM_CAT_KEY)||'{}'); Object.assign(customCategories, d); } catch {}
   // 先用本地缓存快速渲染
   renderWorks();
   // 从GitHub拉取公开数据（无需Token），拉完再重新渲染
